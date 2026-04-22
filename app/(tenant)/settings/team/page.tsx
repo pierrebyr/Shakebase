@@ -120,18 +120,28 @@ export default async function TeamSettingsPage() {
   try {
     return await renderTeamPage()
   } catch (err) {
-    // Re-throw unless it's a Next.js internal redirect — this way the actual
-    // error message lands in Vercel logs with a [team] tag so we can finally
-    // see what's breaking in prod.
+    // Next.js uses digest prefixes as control-flow throws (redirect,
+    // notFound). Let them bubble untouched — they're not real errors.
+    const digest =
+      err && typeof err === 'object' && 'digest' in err
+        ? String((err as { digest?: unknown }).digest ?? '')
+        : ''
     if (
-      err instanceof Error &&
-      'digest' in err &&
-      typeof (err as { digest?: string }).digest === 'string' &&
-      (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+      digest.startsWith('NEXT_REDIRECT') ||
+      digest.startsWith('NEXT_NOT_FOUND') ||
+      digest.startsWith('NEXT_HTTP_ERROR_FALLBACK')
     ) {
       throw err
     }
-    console.error('[team] render failed', err)
+    // Log everything we have so the real cause surfaces in Vercel function
+    // logs. In production Next.js hides error.message from the client — the
+    // only way to see it is via the server log.
+    console.error('[team] render failed', {
+      name: err instanceof Error ? err.name : typeof err,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      digest,
+    })
     throw err
   }
 }
