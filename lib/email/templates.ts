@@ -18,7 +18,6 @@ export const BRAND = {
   securityFrom: 'ShakeBase <security@shakebase.co>',
   billingFrom: 'ShakeBase <billing@shakebase.co>',
   replyTo: 'hello@shakebase.co',
-  address: 'ShakeBase · 14 rue de la Cerise, 75011 Paris',
 }
 
 export type Rendered = {
@@ -91,12 +90,11 @@ ${inner}
       </div>`
 
 const footer = (): string => `      <div style="padding:22px 12px 0;color:#9a9a9a;font-size:12px;line-height:1.6;">
-        <div style="margin-bottom:10px;">
+        <div>
           <a href="https://${BRAND.domain}" style="color:#6e6e6e;text-decoration:none;margin-right:14px;">${BRAND.domain}</a>
           <a href="https://${BRAND.domain}/settings/notifications" style="color:#6e6e6e;text-decoration:none;margin-right:14px;">Notifications</a>
           <a href="https://${BRAND.domain}/help" style="color:#6e6e6e;text-decoration:none;">Help</a>
         </div>
-        <div>${esc(BRAND.address)}</div>
       </div>`
 
 const button = (
