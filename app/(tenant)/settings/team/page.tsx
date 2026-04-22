@@ -135,40 +135,55 @@ export default async function TeamSettingsPage() {
   >()
 
   if (activeIds.length > 0) {
-    const { data: profs } = await admin
-      .from('profiles')
-      .select('id, full_name, department')
-      .in('id', activeIds)
-    for (const p of (profs ?? []) as ProfileRow[]) {
-      profiles.set(p.id, { full_name: p.full_name, department: p.department })
-    }
-
-    // Auth users for email + last_sign_in
-    const { data: usersList } = await admin.auth.admin.listUsers({ perPage: 200 })
-    for (const u of usersList.users) {
-      if (activeIds.includes(u.id)) {
-        const ex = profiles.get(u.id) ?? { full_name: null, department: null }
-        profiles.set(u.id, {
-          ...ex,
-          email: u.email,
-          last_sign_in_at: u.last_sign_in_at ?? null,
-        })
+    // Profiles (own table, cheap).
+    try {
+      const { data: profs } = await admin
+        .from('profiles')
+        .select('id, full_name, department')
+        .in('id', activeIds)
+      for (const p of (profs ?? []) as ProfileRow[]) {
+        profiles.set(p.id, { full_name: p.full_name, department: p.department })
       }
+    } catch (err) {
+      console.error('[team] profiles fetch failed', err)
     }
 
-    // Edit counts from audit_logs (create/update/delete actions by user within workspace)
-    const { data: logs } = await admin
-      .from('audit_logs')
-      .select('actor_user_id')
-      .eq('workspace_id', workspace.id)
-      .in('actor_user_id', activeIds)
-    const counts = new Map<string, number>()
-    for (const l of (logs ?? []) as { actor_user_id: string }[]) {
-      counts.set(l.actor_user_id, (counts.get(l.actor_user_id) ?? 0) + 1)
+    // Auth users for email + last_sign_in. Most likely source of transient
+    // timeouts on cold starts — degrade gracefully if it fails so the page
+    // still renders with full_name only.
+    try {
+      const { data: usersList } = await admin.auth.admin.listUsers({ perPage: 200 })
+      for (const u of usersList.users) {
+        if (activeIds.includes(u.id)) {
+          const ex = profiles.get(u.id) ?? { full_name: null, department: null }
+          profiles.set(u.id, {
+            ...ex,
+            email: u.email,
+            last_sign_in_at: u.last_sign_in_at ?? null,
+          })
+        }
+      }
+    } catch (err) {
+      console.error('[team] listUsers failed', err)
     }
-    for (const [uid, n] of counts) {
-      const ex = profiles.get(uid)
-      if (ex) profiles.set(uid, { ...ex, edits: n })
+
+    // Edit counts from audit_logs (create/update/delete actions by user within workspace).
+    try {
+      const { data: logs } = await admin
+        .from('audit_logs')
+        .select('actor_user_id')
+        .eq('workspace_id', workspace.id)
+        .in('actor_user_id', activeIds)
+      const counts = new Map<string, number>()
+      for (const l of (logs ?? []) as { actor_user_id: string }[]) {
+        counts.set(l.actor_user_id, (counts.get(l.actor_user_id) ?? 0) + 1)
+      }
+      for (const [uid, n] of counts) {
+        const ex = profiles.get(uid)
+        if (ex) profiles.set(uid, { ...ex, edits: n })
+      }
+    } catch (err) {
+      console.error('[team] edit counts failed', err)
     }
   }
 
@@ -193,14 +208,8 @@ export default async function TeamSettingsPage() {
   }
   const seats = 25
 
-  // Access log
-  const { data: logData } = await admin
-    .from('audit_logs')
-    .select('id, action, actor_user_id, target_type, target_id, metadata, created_at')
-    .eq('workspace_id', workspace.id)
-    .order('created_at', { ascending: false })
-    .limit(6)
-  const logs = (logData ?? []) as {
+  // Access log — non-critical, degrade to empty list on failure.
+  type LogRow = {
     id: string
     action: string
     actor_user_id: string | null
@@ -208,14 +217,33 @@ export default async function TeamSettingsPage() {
     target_id: string | null
     metadata: unknown
     created_at: string
-  }[]
+  }
+  let logs: LogRow[] = []
+  try {
+    const { data: logData } = await admin
+      .from('audit_logs')
+      .select('id, action, actor_user_id, target_type, target_id, metadata, created_at')
+      .eq('workspace_id', workspace.id)
+      .order('created_at', { ascending: false })
+      .limit(6)
+    logs = (logData ?? []) as LogRow[]
+  } catch (err) {
+    console.error('[team] audit_logs fetch failed', err)
+  }
 
   const actorNames = new Map<string, string>()
   const actorIds = Array.from(new Set(logs.map((l) => l.actor_user_id).filter(Boolean) as string[]))
   if (actorIds.length > 0) {
-    const { data: profs } = await admin.from('profiles').select('id, full_name').in('id', actorIds)
-    for (const p of (profs ?? []) as ProfileRow[]) {
-      actorNames.set(p.id, p.full_name ?? 'Someone')
+    try {
+      const { data: profs } = await admin
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', actorIds)
+      for (const p of (profs ?? []) as ProfileRow[]) {
+        actorNames.set(p.id, p.full_name ?? 'Someone')
+      }
+    } catch (err) {
+      console.error('[team] actor profiles fetch failed', err)
     }
   }
 
