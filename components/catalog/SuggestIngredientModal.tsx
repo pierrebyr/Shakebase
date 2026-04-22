@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   suggestIngredientAction,
   type SuggestResult,
@@ -36,33 +37,50 @@ export function SuggestIngredientModal() {
     }, 1200)
   }
 
-  return (
-    <>
-      <button
-        type="button"
-        className="btn-secondary"
-        style={{ justifyContent: 'center' }}
-        onClick={() => setOpen(true)}
-      >
-        <Icon name="plus" size={12} />
-        Suggest for shared catalog
-      </button>
+  useEffect(() => {
+    if (!open) return
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', esc)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', esc)
+      document.body.style.overflow = prev
+    }
+  }, [open])
 
-      {open && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 80,
-            background: 'rgba(25, 23, 20, 0.45)',
-            backdropFilter: 'blur(6px)',
-            display: 'grid',
-            placeItems: 'center',
-          }}
-          onClick={() => setOpen(false)}
-        >
+  const button = (
+    <button
+      type="button"
+      className="btn-secondary"
+      style={{ justifyContent: 'center' }}
+      onClick={() => setOpen(true)}
+    >
+      <Icon name="plus" size={12} />
+      Suggest for shared catalog
+    </button>
+  )
+
+  const overlay = open ? (
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 80,
+        background: 'rgba(25, 23, 20, 0.45)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        display: 'grid',
+        placeItems: 'center',
+        overflow: 'auto',
+        padding: 20,
+      }}
+      onClick={() => setOpen(false)}
+    >
           <div
             className="card"
             style={{
@@ -229,8 +247,13 @@ export function SuggestIngredientModal() {
               </form>
             )}
           </div>
-        </div>
-      )}
+    </div>
+  ) : null
+
+  return (
+    <>
+      {button}
+      {overlay && typeof document !== 'undefined' ? createPortal(overlay, document.body) : null}
     </>
   )
 }

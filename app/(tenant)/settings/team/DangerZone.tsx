@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from '@/components/icons'
 import { transferOwnershipAction, deleteWorkspaceAction } from './actions'
 
@@ -245,7 +246,20 @@ function ModalShell({
   children: React.ReactNode
   onClose: () => void
 }) {
-  return (
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', esc)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', esc)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [onClose])
+
+  const content = (
     <div
       onClick={onClose}
       style={{
@@ -254,9 +268,11 @@ function ModalShell({
         zIndex: 100,
         background: 'rgba(20,15,10,0.45)',
         backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         display: 'grid',
         placeItems: 'center',
         padding: 20,
+        overflow: 'auto',
       }}
     >
       <div
@@ -315,4 +331,7 @@ function ModalShell({
       </div>
     </div>
   )
+
+  if (typeof document === 'undefined') return null
+  return createPortal(content, document.body)
 }

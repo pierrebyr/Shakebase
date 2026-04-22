@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from '@/components/icons'
 import { inviteTeammateAction, type InviteResult } from './actions'
 
@@ -21,12 +22,24 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', esc)
-    return () => window.removeEventListener('keydown', esc)
+    // Lock body scroll while the modal is open so the background can't
+    // shift under it (the /settings/team page is long enough to scroll).
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', esc)
+      document.body.style.overflow = prevOverflow
+    }
   }, [onClose])
 
   const emailOk = /.+@.+\..+/.test(email)
 
-  return (
+  // Render to document.body via a portal so the modal escapes any ancestor
+  // transform/filter context (e.g. .page.fade-up's animation sets a
+  // transform, which makes position: fixed positioned relative to the page
+  // instead of the viewport — that's why the modal appeared inside the
+  // scroll column and the backdrop blur didn't cover the sidebar nav).
+  const modal = (
     <div
       onClick={onClose}
       style={{
@@ -35,9 +48,11 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
         zIndex: 100,
         background: 'rgba(20,15,10,0.45)',
         backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         display: 'grid',
         placeItems: 'center',
         padding: 20,
+        overflow: 'auto',
       }}
     >
       <div
@@ -264,6 +279,9 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   )
+
+  if (typeof document === 'undefined') return null
+  return createPortal(modal, document.body)
 }
 
 export function InviteModalTrigger({ children }: { children?: React.ReactNode }) {
