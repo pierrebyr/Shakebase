@@ -154,7 +154,7 @@ export default async function DashboardPage() {
   const topCreators = creators
     .map((cr) => ({ ...cr, count: countByCreator.get(cr.id) ?? 0 }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 4)
+    .slice(0, 5)
 
   // Updated yesterday count for the subtitle
   const yesterday = Math.floor(
@@ -477,7 +477,7 @@ export default async function DashboardPage() {
             className="dash-contributors"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gridTemplateColumns: `repeat(${topCreators.length}, 1fr)`,
               gap: 12,
             }}
           >
