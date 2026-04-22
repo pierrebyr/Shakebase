@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
+import { getUser } from '@/lib/auth/session'
 import { Icon } from '@/components/icons'
 import { EmptyState } from '@/components/EmptyState'
 import { CollectionCard, type CollectionCardData } from '@/components/cocktail/CollectionCard'
@@ -22,6 +23,7 @@ type Row = {
 
 export default async function CollectionsPage() {
   const workspace = await getCurrentWorkspace()
+  const user = await getUser()
   const supabase = await createClient()
 
   const { data } = await supabase
@@ -59,6 +61,9 @@ export default async function CollectionsPage() {
         from: c.orb_from ?? '#f4efe0',
         to: c.orb_to ?? '#c9b89a',
       }))
+    const canDelete = Boolean(
+      user && (col.created_by === user.id || workspace.owner_user_id === user.id),
+    )
     return {
       id: col.id,
       name: col.name,
@@ -70,6 +75,7 @@ export default async function CollectionsPage() {
       owner_name: col.created_by ? ownerById.get(col.created_by) ?? null : null,
       count: orbs.length,
       orbs,
+      canDelete,
     }
   })
 

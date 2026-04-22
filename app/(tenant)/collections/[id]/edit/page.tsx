@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
+import { getUser } from '@/lib/auth/session'
 import { Icon } from '@/components/icons'
 import { EditCollectionForm } from './EditCollectionForm'
 import { deleteCollectionAction } from '../actions'
@@ -15,21 +16,30 @@ type CollectionRow = {
   cover_from: string
   cover_to: string
   pinned: boolean
+  created_by: string | null
 }
 
 export default async function EditCollectionPage({ params }: Props) {
   const { id } = await params
   const workspace = await getCurrentWorkspace()
+  const user = await getUser()
   const supabase = await createClient()
 
   const { data } = await supabase
     .from('collections')
-    .select('id, name, description, cover_from, cover_to, pinned')
+    .select('id, name, description, cover_from, cover_to, pinned, created_by')
     .eq('id', id)
     .eq('workspace_id', workspace.id)
     .maybeSingle()
   const collection = data as CollectionRow | null
   if (!collection) notFound()
+
+  // Only the creator (or workspace owner) can reach the editor. Non-creators
+  // are redirected to the view page.
+  const canEdit =
+    Boolean(user) &&
+    (collection.created_by === user!.id || workspace.owner_user_id === user!.id)
+  if (!canEdit) redirect(`/collections/${collection.id}`)
 
   return (
     <div className="page fade-up" style={{ maxWidth: 640 }}>

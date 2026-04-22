@@ -19,6 +19,7 @@ export type CollectionCardData = {
   owner_name: string | null
   count: number
   orbs: { from: string; to: string }[]
+  canDelete?: boolean
 }
 
 export function CollectionCard({ c }: { c: CollectionCardData }) {
@@ -55,34 +56,36 @@ export function CollectionCard({ c }: { c: CollectionCardData }) {
     >
       <CollectionCover from={c.cover_from} to={c.cover_to} orbs={c.orbs} height={170} />
 
-      <button
-        type="button"
-        className="collection-card-del"
-        onClick={handleDelete}
-        title="Delete collection"
-        aria-label="Delete collection"
-        disabled={pending}
-        style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          width: 28,
-          height: 28,
-          padding: 0,
-          display: 'grid',
-          placeItems: 'center',
-          background: 'rgba(255,255,255,0.9)',
-          color: 'var(--crit)',
-          border: '1px solid var(--line-1)',
-          borderRadius: 999,
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          cursor: pending ? 'wait' : 'pointer',
-          zIndex: 2,
-        }}
-      >
-        <Icon name="x" size={12} />
-      </button>
+      {c.canDelete && (
+        <button
+          type="button"
+          className="collection-card-del"
+          onClick={handleDelete}
+          title="Delete collection"
+          aria-label="Delete collection"
+          disabled={pending}
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            width: 28,
+            height: 28,
+            padding: 0,
+            display: 'grid',
+            placeItems: 'center',
+            background: 'rgba(255,255,255,0.9)',
+            color: 'var(--crit)',
+            border: '1px solid var(--line-1)',
+            borderRadius: 999,
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            cursor: pending ? 'wait' : 'pointer',
+            zIndex: 2,
+          }}
+        >
+          <Icon name="x" size={12} />
+        </button>
+      )}
 
       <div
         style={{

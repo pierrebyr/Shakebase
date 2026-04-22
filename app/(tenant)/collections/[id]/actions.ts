@@ -4,10 +4,35 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
 import { getUser } from '@/lib/auth/session'
 
 export type CollectionMutationResult = { ok: true } | { ok: false; error: string }
+
+// Collections are editable only by the creator. Workspace owners can also
+// edit/delete them so they can clean up after a member leaves.
+async function assertCanEditCollection(
+  collectionId: string,
+  userId: string,
+  workspace: { id: string; owner_user_id: string },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('collections')
+    .select('created_by')
+    .eq('id', collectionId)
+    .eq('workspace_id', workspace.id)
+    .maybeSingle()
+  const created_by = (data as { created_by: string | null } | null)?.created_by
+  if (created_by === undefined) return { ok: false, error: 'Collection not found' }
+  const isCreator = created_by === userId
+  const isOwner = workspace.owner_user_id === userId
+  if (!isCreator && !isOwner) {
+    return { ok: false, error: 'Only the collection creator can edit or delete it' }
+  }
+  return { ok: true }
+}
 
 const UpdateSchema = z.object({
   id: z.string().uuid(),
@@ -35,6 +60,9 @@ export async function updateCollectionAction(
     pinned: String(formData.get('pinned') ?? ''),
   })
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid form' }
+
+  const gate = await assertCanEditCollection(parsed.data.id, user.id, workspace)
+  if (!gate.ok) return gate
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -64,6 +92,9 @@ export async function deleteCollectionAction(formData: FormData): Promise<void> 
 
   const parsed = DeleteSchema.safeParse({ id: formData.get('id') })
   if (!parsed.success) throw new Error('Invalid form')
+
+  const gate = await assertCanEditCollection(parsed.data.id, user.id, workspace)
+  if (!gate.ok) throw new Error(gate.error)
 
   const supabase = await createClient()
   const { error } = await supabase

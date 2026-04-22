@@ -149,6 +149,10 @@ export default async function CollectionDetailPage({ params }: Props) {
     to: c.orb_to ?? '#c9b89a',
   }))
 
+  const canEdit =
+    Boolean(user) &&
+    (collection.created_by === user!.id || workspace.owner_user_id === user!.id)
+
   // Resolve owner name
   let ownerName: string | null = null
   if (collection.created_by) {
@@ -275,14 +279,16 @@ export default async function CollectionDetailPage({ params }: Props) {
                 Updated {relTime(collection.updated_at)}
               </span>
             </div>
-            <Link
-              href={`/collections/${collection.id}/edit`}
-              className="btn-secondary"
-              style={{ marginLeft: 'auto' }}
-            >
-              <Icon name="edit" size={13} />
-              Edit
-            </Link>
+            {canEdit && (
+              <Link
+                href={`/collections/${collection.id}/edit`}
+                className="btn-secondary"
+                style={{ marginLeft: 'auto' }}
+              >
+                <Icon name="edit" size={13} />
+                Edit
+              </Link>
+            )}
           </div>
         </div>
       </div>
