@@ -16,6 +16,22 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
   const [state, action, pending] = useActionState(inviteTeammateAction, initialState)
   const [role, setRole] = useState<'editor' | 'viewer'>('editor')
   const [email, setEmail] = useState('')
+  const [sentEmail, setSentEmail] = useState('')
+
+  // An invite has been successfully sent when the action returned a non-empty
+  // acceptUrl. We also stash the email that was sent so the success screen
+  // shows the right address even after the user types a new one.
+  const sent = state.ok && state.acceptUrl.length > 0 && sentEmail.length > 0
+  useEffect(() => {
+    if (state.ok && state.acceptUrl.length > 0 && !sentEmail) {
+      setSentEmail(email)
+    }
+  }, [state, email, sentEmail])
+
+  const resetForm = () => {
+    setSentEmail('')
+    setEmail('')
+  }
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => {
@@ -65,6 +81,15 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
           boxShadow: '0 30px 80px rgba(0,0,0,0.3)',
         }}
       >
+        {sent ? (
+          <InviteSuccess
+            email={sentEmail}
+            acceptUrl={state.ok ? state.acceptUrl : ''}
+            provider={state.ok ? state.provider : 'console'}
+            onClose={onClose}
+            onAnother={resetForm}
+          />
+        ) : (
         <form action={action}>
           <div
             style={{
@@ -199,49 +224,8 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
                 </div>
               )}
 
-              {state.ok && state.provider === 'console' && state.acceptUrl && (
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: 'var(--ink-3)',
-                    background: 'var(--bg-sunken)',
-                    borderRadius: 10,
-                    padding: '10px 12px',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <strong style={{ color: 'var(--ink-2)' }}>Dev mode — no email sent.</strong>{' '}
-                  Copy the invite link:
-                  <div
-                    className="mono"
-                    style={{
-                      marginTop: 6,
-                      padding: '6px 8px',
-                      background: '#fff',
-                      border: '1px solid var(--line-1)',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      wordBreak: 'break-all',
-                      userSelect: 'all',
-                    }}
-                  >
-                    {state.acceptUrl}
-                  </div>
-                </div>
-              )}
-              {state.ok && state.provider === 'resend' && state.acceptUrl && (
-                <div
-                  style={{
-                    fontSize: 12.5,
-                    color: 'var(--ok)',
-                    background: '#e3f0e9',
-                    borderRadius: 10,
-                    padding: '8px 12px',
-                  }}
-                >
-                  Invite sent to {email}.
-                </div>
-              )}
+              {/* Success state is rendered by <InviteSuccess /> above — we
+                  swap the form out entirely rather than stacking a banner. */}
             </div>
           </div>
 
@@ -276,12 +260,128 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         </form>
+        )}
       </div>
     </div>
   )
 
   if (typeof document === 'undefined') return null
   return createPortal(modal, document.body)
+}
+
+function InviteSuccess({
+  email,
+  acceptUrl,
+  provider,
+  onClose,
+  onAnother,
+}: {
+  email: string
+  acceptUrl: string
+  provider: 'console' | 'resend'
+  onClose: () => void
+  onAnother: () => void
+}) {
+  return (
+    <div style={{ padding: '36px 26px 22px' }}>
+      <div
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: 999,
+          background: 'var(--accent-wash)',
+          color: 'var(--accent-ink)',
+          display: 'grid',
+          placeItems: 'center',
+          margin: '0 auto 18px',
+        }}
+      >
+        <Icon name="check" size={26} />
+      </div>
+      <div className="col" style={{ alignItems: 'center', gap: 6, textAlign: 'center' }}>
+        <span
+          className="mono"
+          style={{
+            fontSize: 10.5,
+            color: 'var(--accent-ink)',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Invite sent
+        </span>
+        <h2
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontWeight: 400,
+            fontSize: 28,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          On its way.
+        </h2>
+        <p
+          style={{
+            fontSize: 14,
+            color: 'var(--ink-3)',
+            margin: '4px 0 0',
+            lineHeight: 1.55,
+            maxWidth: '42ch',
+          }}
+        >
+          <strong style={{ color: 'var(--ink-2)', fontWeight: 500 }}>{email}</strong> will get an
+          email with the accept link. It expires in 7 days.
+        </p>
+      </div>
+
+      {provider === 'console' && acceptUrl && (
+        <div
+          style={{
+            marginTop: 22,
+            fontSize: 12,
+            color: 'var(--ink-3)',
+            background: 'var(--bg-sunken)',
+            borderRadius: 10,
+            padding: '12px 14px',
+            lineHeight: 1.5,
+          }}
+        >
+          <strong style={{ color: 'var(--ink-2)' }}>Dev mode — no email sent.</strong>{' '}
+          Copy the invite link:
+          <div
+            className="mono"
+            style={{
+              marginTop: 6,
+              padding: '6px 8px',
+              background: '#fff',
+              border: '1px solid var(--line-1)',
+              borderRadius: 6,
+              fontSize: 11,
+              wordBreak: 'break-all',
+              userSelect: 'all',
+            }}
+          >
+            {acceptUrl}
+          </div>
+        </div>
+      )}
+
+      <div
+        className="row gap-sm"
+        style={{ justifyContent: 'center', marginTop: 28, flexWrap: 'wrap' }}
+      >
+        <button type="button" className="btn-secondary" onClick={onAnother}>
+          <Icon name="plus" size={12} />
+          Invite another
+        </button>
+        <button type="button" className="btn-primary" onClick={onClose}>
+          Done
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export function InviteModalTrigger({ children }: { children?: React.ReactNode }) {

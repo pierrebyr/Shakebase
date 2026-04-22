@@ -48,7 +48,21 @@ const emailShell = (bodyInner: string, preheader: string): string => `<!doctype 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="color-scheme" content="light only" />
+<meta name="x-apple-disable-message-reformatting" />
+<meta name="format-detection" content="telephone=no, address=no, email=no, date=no, url=no" />
 <title>${esc(BRAND.name)}</title>
+<style>
+  /* Stop Apple Mail / Outlook / Gmail from auto-linkifying plain text
+     (phone numbers, addresses, emails, URLs) with their default blue. */
+  a[x-apple-data-detectors] {
+    color: inherit !important;
+    text-decoration: none !important;
+    font-size: inherit !important;
+    font-family: inherit !important;
+    font-weight: inherit !important;
+    line-height: inherit !important;
+  }
+</style>
 </head>
 <body style="margin:0;padding:0;background:#f3f1ea;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#141414;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;visibility:hidden;">${esc(preheader)}</div>
@@ -130,12 +144,12 @@ ${hairline()}
           <div style="width:36px;height:36px;border-radius:50%;background:#e8c898;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-style:italic;font-size:16px;color:#8a5f2e;">${e(initial)}</div>
           <div>
             <div style="font-size:13px;color:#141414;font-weight:500;">${e(i.inviterName)}</div>
-            <div style="font-size:12px;color:#9a9a9a;">${e(i.inviterEmail)}</div>
+            <a href="mailto:${e(i.inviterEmail)}" style="font-size:12px;color:#8a5f2e;text-decoration:none;border-bottom:1px solid rgba(138,95,46,0.25);">${e(i.inviterEmail)}</a>
           </div>
         </div>
 
         <div style="font-size:12px;color:#9a9a9a;margin-top:18px;line-height:1.6;">Trouble with the button? Paste this link into your browser:<br/>
-          <span style="color:#6e6e6e;word-break:break-all;">${e(i.acceptUrl)}</span>
+          <a href="${e(i.acceptUrl)}" style="color:#6e6e6e;text-decoration:none;border-bottom:1px solid rgba(10,10,10,0.15);word-break:break-all;">${e(i.acceptUrl)}</a>
         </div>`)
 
   const preheader = `Join ${BRAND.name} — ${i.inviterName} invited you to ${i.workspaceName}`
@@ -249,7 +263,7 @@ ${hairline()}
         </div>
 
         <div style="font-size:12px;color:#9a9a9a;margin-top:18px;line-height:1.6;">Link not working? Paste this into your browser:<br/>
-          <span style="color:#6e6e6e;word-break:break-all;">${e(pr.resetUrl)}</span>
+          <a href="${e(pr.resetUrl)}" style="color:#6e6e6e;text-decoration:none;border-bottom:1px solid rgba(10,10,10,0.15);word-break:break-all;">${e(pr.resetUrl)}</a>
         </div>`)
 
   const preheader = `A one-time link to choose a new password. Expires in ${mins} minutes.`
