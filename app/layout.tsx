@@ -48,7 +48,7 @@ const SITE_URL = `https://${ROOT}`
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'ShakeBase — the cocktail canon for brands and bar teams',
+    default: 'ShakeBase — The Cocktail Canon for Brands and Bar Teams',
     template: '%s · ShakeBase',
   },
   description:
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: SITE_URL,
     siteName: 'ShakeBase',
-    title: 'ShakeBase — the cocktail canon for brands and bar teams',
+    title: 'ShakeBase — The Cocktail Canon for Brands and Bar Teams',
     description:
       'Your private cocktail library on your own subdomain, backed by a global catalog of ingredients and products.',
     images: [
@@ -85,7 +85,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ShakeBase — the cocktail canon for brands and bar teams',
+    title: 'ShakeBase — The Cocktail Canon for Brands and Bar Teams',
     description:
       'Your private cocktail library on your own subdomain, backed by a global catalog of ingredients and products.',
     images: ['/og.png'],

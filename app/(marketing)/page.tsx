@@ -13,7 +13,7 @@ import type { Metadata } from 'next'
 // Override the layout's %s template for the home page (full title, no suffix).
 export const metadata: Metadata = {
   title: {
-    absolute: 'ShakeBase — the cocktail canon for brands and bar teams',
+    absolute: 'ShakeBase — The Cocktail Canon for Brands and Bar Teams',
   },
   description:
     'Multi-tenant cocktail intelligence for spirits brands and bar groups. One canonical library for every recipe, creator, pour and specification.',
