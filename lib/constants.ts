@@ -8,6 +8,7 @@ export const SUBSCRIPTION_STATUSES = [
   'past_due',
   'canceled',
   'frozen',
+  'gifted',
 ] as const
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number]
 

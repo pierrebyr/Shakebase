@@ -30,6 +30,8 @@ export async function getCurrentWorkspace(): Promise<Workspace> {
 }
 
 export function isWorkspaceFrozen(ws: Workspace): boolean {
+  // Gifted workspaces are never frozen — they're outside the billing loop.
+  if (ws.subscription_status === 'gifted') return false
   if (ws.subscription_status === 'frozen' || ws.subscription_status === 'canceled') return true
   if (
     ws.subscription_status === 'past_due' &&

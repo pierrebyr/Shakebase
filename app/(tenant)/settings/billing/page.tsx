@@ -117,7 +117,76 @@ export default async function BillingSettingsPage() {
         </p>
       </div>
 
+      {workspace.subscription_status === 'gifted' && (
+        <div
+          className="card"
+          style={{
+            padding: 32,
+            borderRadius: 18,
+            background:
+              'linear-gradient(135deg, var(--accent-wash), #f0dfc0 60%, var(--bg-elev))',
+            border: '1px solid rgba(196,145,85,0.35)',
+            marginBottom: 20,
+          }}
+        >
+          <div
+            className="mono"
+            style={{
+              fontSize: 10.5,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              color: 'var(--accent-ink)',
+              marginBottom: 12,
+            }}
+          >
+            Gifted workspace
+          </div>
+          <h2
+            style={{
+              margin: 0,
+              fontFamily: 'var(--font-display)',
+              fontStyle: 'italic',
+              fontSize: 40,
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+              color: 'var(--ink-1)',
+            }}
+          >
+            On the house.
+          </h2>
+          <p
+            style={{
+              margin: '16px 0 0',
+              fontSize: 13.5,
+              color: 'var(--ink-2)',
+              lineHeight: 1.55,
+              maxWidth: '54ch',
+            }}
+          >
+            {workspace.name} has been gifted by the ShakeBase team. Full access to every
+            feature — unlimited cocktails, 25 team seats, all venues, priority support —
+            with no billing, no trial clock, no card on file.
+          </p>
+          <p
+            style={{
+              margin: '10px 0 0',
+              fontSize: 12.5,
+              color: 'var(--ink-3)',
+              lineHeight: 1.55,
+            }}
+          >
+            Questions? Reach out to{' '}
+            <a href="mailto:hello@shakebase.co" style={{ color: 'var(--accent-ink)' }}>
+              hello@shakebase.co
+            </a>
+            .
+          </p>
+        </div>
+      )}
+
       {/* Plan card */}
+      {workspace.subscription_status !== 'gifted' && (
+      <>
       <div
         className="card"
         style={{
@@ -426,6 +495,8 @@ export default async function BillingSettingsPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </>
   )
 }

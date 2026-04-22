@@ -8,6 +8,42 @@ type Props = {
 }
 
 export function TrialBanner({ status, trialEndsAt, frozen }: Props) {
+  if (status === 'gifted') {
+    return (
+      <div
+        style={{
+          padding: '10px 28px',
+          background: 'linear-gradient(90deg, #f5e9d6, #e8d4b2)',
+          borderBottom: '1px solid rgba(196,145,85,0.3)',
+          fontSize: 12.5,
+          color: 'var(--accent-ink)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <span
+          className="mono"
+          style={{
+            fontSize: 10,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            background: 'var(--accent-ink)',
+            color: '#fff',
+            padding: '3px 8px',
+            borderRadius: 999,
+          }}
+        >
+          Gifted
+        </span>
+        <strong>Workspace offered by ShakeBase.</strong>
+        <span style={{ color: 'var(--ink-3)' }}>
+          No billing, no trial clock. Enjoy.
+        </span>
+      </div>
+    )
+  }
+
   if (frozen) {
     return (
       <div

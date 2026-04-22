@@ -230,6 +230,11 @@ export default async function WorkspaceDetailPage({ params, searchParams }: Para
           {w.subscription_status === 'past_due' && (
             <ActionForm workspaceId={w.id} op="mark_active" label="Mark active" icon="check" primary />
           )}
+          {w.subscription_status === 'gifted' ? (
+            <ActionForm workspaceId={w.id} op="ungift" label="Remove gift" icon="x" />
+          ) : (
+            <ActionForm workspaceId={w.id} op="gift" label="Gift workspace" icon="sparkles" />
+          )}
           <ActionForm workspaceId={w.id} op="reset_password" label="Reset owner password" icon="key" />
           <div style={{ marginLeft: 'auto' }}>
             {w.subscription_status === 'frozen' ? (
@@ -523,6 +528,8 @@ const ACTION_SUCCESS: Record<string, string> = {
   unfreeze_ok: 'Workspace unfrozen and restored.',
   extend_trial_ok: 'Trial extended by 7 days.',
   mark_active_ok: 'Marked as active. Subscription restored.',
+  gift_ok: 'Workspace gifted. No billing, no trial clock.',
+  ungift_ok: 'Gift removed. Workspace is now active and billable.',
   reset_password_ok: 'Password reset link issued to the owner.',
 }
 
@@ -531,6 +538,8 @@ const ACTION_ERROR: Record<string, string> = {
   not_frozen: 'Workspace isn\u2019t frozen — nothing to unfreeze.',
   not_on_trial: 'Workspace isn\u2019t on trial.',
   not_past_due: 'Workspace isn\u2019t past-due.',
+  already_gifted: 'Workspace is already gifted.',
+  not_gifted: 'Workspace isn\u2019t gifted.',
   no_owner: 'No owner on this workspace.',
   no_email: 'Owner has no email on file.',
   link_error: 'Could not generate the recovery link.',

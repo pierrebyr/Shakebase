@@ -48,6 +48,12 @@ export async function POST(request: NextRequest, { params }: RouteContext): Prom
     case 'mark_active':
       outcome = await markActive(adminClient, ws)
       break
+    case 'gift':
+      outcome = await gift(adminClient, ws)
+      break
+    case 'ungift':
+      outcome = await ungift(adminClient, ws)
+      break
     case 'reset_password':
       outcome = await resetOwnerPassword(adminClient, ws)
       break
@@ -141,6 +147,39 @@ async function markActive(admin: Supabase, ws: Ws): Promise<Outcome> {
     .eq('id', ws.id)
   if (error) return { ok: false, code: 'update_failed' }
   return { ok: true, code: 'ok', meta: { previous_status: ws.subscription_status } }
+}
+
+async function gift(admin: Supabase, ws: Ws): Promise<Outcome> {
+  if (ws.subscription_status === 'gifted') {
+    return { ok: false, code: 'already_gifted' }
+  }
+  const { error } = await admin
+    .from('workspaces')
+    .update({
+      subscription_status: 'gifted',
+      // Clear the trial clock — gifted workspaces are outside the billing
+      // loop entirely, so the trial countdown would be misleading.
+      trial_ends_at: null,
+      frozen_at: null,
+    } as never)
+    .eq('id', ws.id)
+  if (error) return { ok: false, code: 'update_failed' }
+  return { ok: true, code: 'ok', meta: { previous_status: ws.subscription_status } }
+}
+
+async function ungift(admin: Supabase, ws: Ws): Promise<Outcome> {
+  if (ws.subscription_status !== 'gifted') {
+    return { ok: false, code: 'not_gifted' }
+  }
+  // Drop back to 'active' — if there's a Stripe subscription it'll take over
+  // billing cycle naturally; otherwise the owner can set up billing from
+  // Settings → Billing.
+  const { error } = await admin
+    .from('workspaces')
+    .update({ subscription_status: 'active' } as never)
+    .eq('id', ws.id)
+  if (error) return { ok: false, code: 'update_failed' }
+  return { ok: true, code: 'ok' }
 }
 
 async function resetOwnerPassword(admin: Supabase, ws: Ws): Promise<Outcome> {

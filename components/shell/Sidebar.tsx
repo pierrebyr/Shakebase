@@ -108,7 +108,12 @@ export function Sidebar({
         </div>
       )}
 
-      <div className="sidebar-foot">
+      <Link
+        href="/settings"
+        className="sidebar-foot"
+        data-active={pathname?.startsWith('/settings') ? true : false}
+        aria-label="Open settings"
+      >
         <Avatar name={user.fullName} />
         <div className="col" style={{ lineHeight: 1.2 }}>
           <strong style={{ fontSize: 12.5, fontWeight: 500 }}>{user.fullName}</strong>
@@ -116,7 +121,7 @@ export function Sidebar({
             <small style={{ fontSize: 10.5, color: 'var(--ink-4)' }}>{user.jobTitle}</small>
           )}
         </div>
-      </div>
+      </Link>
     </aside>
   )
 }
