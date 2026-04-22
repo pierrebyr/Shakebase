@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUser } from '@/lib/auth/session'
+import { rateLimit, rateLimitErrorMessage } from '@/lib/rate-limit'
 
 // Full workspace snapshot as JSON. Requires active membership (any role).
 // Large workspaces: we page every table in chunks of 1000 so we never
@@ -29,6 +30,19 @@ async function fetchAll<T>(query: (p: Paged) => any): Promise<T[]> {
 export async function GET() {
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
+
+  // Full workspace snapshot is the heaviest export — cap tighter.
+  const rl = await rateLimit({
+    key: `export-workspace:${user.id}`,
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+  })
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: rateLimitErrorMessage(rl.retryAfter) },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+    )
+  }
 
   const slug = (await headers()).get('x-workspace-slug')
   if (!slug) return NextResponse.json({ error: 'No workspace' }, { status: 400 })

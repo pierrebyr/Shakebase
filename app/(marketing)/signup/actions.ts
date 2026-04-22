@@ -32,7 +32,7 @@ export type SignupResult =
 export async function signupAction(_: unknown, formData: FormData): Promise<SignupResult> {
   // Cap signups per IP to 3 per hour to slow bulk-workspace spam.
   const ip = await clientIp()
-  const rl = rateLimit({
+  const rl = await rateLimit({
     key: `signup:${ip}`,
     limit: 3,
     windowMs: 60 * 60 * 1000,

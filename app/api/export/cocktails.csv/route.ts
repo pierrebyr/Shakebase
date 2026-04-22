@@ -3,10 +3,24 @@ import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUser } from '@/lib/auth/session'
 import { toCsv } from '@/lib/csv'
+import { rateLimit, rateLimitErrorMessage } from '@/lib/rate-limit'
 
 export async function GET() {
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
+
+  // Exports touch the full workspace — cap at 5 per user per hour.
+  const rl = await rateLimit({
+    key: `export-cocktails:${user.id}`,
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+  })
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: rateLimitErrorMessage(rl.retryAfter) },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+    )
+  }
 
   const slug = (await headers()).get('x-workspace-slug')
   if (!slug) return NextResponse.json({ error: 'No workspace' }, { status: 400 })

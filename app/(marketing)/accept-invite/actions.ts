@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { workspaceUrl } from '@/lib/cookies'
 import { createNotification } from '@/lib/notifications/create'
+import { clientIp, rateLimit, rateLimitErrorMessage } from '@/lib/rate-limit'
 
 export type AcceptResult = { ok: true } | { ok: false; error: string }
 
@@ -16,6 +17,18 @@ const AcceptSchema = z.object({
 })
 
 export async function acceptInviteAction(_: unknown, formData: FormData): Promise<AcceptResult> {
+  // 10 attempts per IP per hour. Protects against token-guessing + bulk
+  // acceptance abuse without punishing a legitimate retry after a typo.
+  const ip = await clientIp()
+  const rl = await rateLimit({
+    key: `accept-invite:${ip}`,
+    limit: 10,
+    windowMs: 60 * 60 * 1000,
+  })
+  if (!rl.ok) {
+    return { ok: false, error: rateLimitErrorMessage(rl.retryAfter) }
+  }
+
   const parsed = AcceptSchema.safeParse({
     token: String(formData.get('token') ?? ''),
     password: String(formData.get('password') ?? ''),

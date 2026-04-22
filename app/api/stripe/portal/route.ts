@@ -3,6 +3,7 @@ import { getStripe, stripeConfigured } from '@/lib/stripe/client'
 import { getUser } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { workspaceUrl } from '@/lib/cookies'
+import { rateLimit, rateLimitErrorMessage } from '@/lib/rate-limit'
 
 // Owner-only: opens a Stripe Customer Portal session so the owner can manage
 // payment methods, view invoices, update billing email, or cancel.
@@ -13,6 +14,20 @@ export async function POST(req: NextRequest) {
 
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
+
+  // 10 portal sessions per user per minute — more than enough for honest use,
+  // stops an attacker (or buggy client) from hammering Stripe from a session.
+  const rl = await rateLimit({
+    key: `stripe-portal:${user.id}`,
+    limit: 10,
+    windowMs: 60 * 1000,
+  })
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: rateLimitErrorMessage(rl.retryAfter) },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+    )
+  }
 
   // Resolve workspace from the subdomain header set by middleware.
   const slug = req.headers.get('x-workspace-slug')

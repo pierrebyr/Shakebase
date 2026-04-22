@@ -2,6 +2,7 @@
 
 import { z } from 'zod'
 import { sendEmail } from '@/lib/email/send'
+import { clientIp, rateLimit, rateLimitErrorMessage } from '@/lib/rate-limit'
 
 export type ContactResult =
   | { ok: true; ticket: string; topic: string; firstName: string }
@@ -25,6 +26,17 @@ export async function submitContactAction(
   _: unknown,
   formData: FormData,
 ): Promise<ContactResult> {
+  // 3 submissions per IP per hour — absorbs honest retries, blocks spam.
+  const ip = await clientIp()
+  const rl = await rateLimit({
+    key: `contact:${ip}`,
+    limit: 3,
+    windowMs: 60 * 60 * 1000,
+  })
+  if (!rl.ok) {
+    return { ok: false, error: rateLimitErrorMessage(rl.retryAfter) }
+  }
+
   const parsed = Schema.safeParse({
     first: formData.get('first') ?? '',
     last: formData.get('last') ?? '',

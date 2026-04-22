@@ -28,7 +28,7 @@ export async function loginAction(_: unknown, formData: FormData): Promise<Login
   // 5 attempts per 15 minutes per IP+email combo. Slows brute force
   // without blocking legitimate retries on typos.
   const ip = await clientIp()
-  const rl = rateLimit({
+  const rl = await rateLimit({
     key: `login:${ip}:${parsed.data.email.toLowerCase()}`,
     limit: 5,
     windowMs: 15 * 60 * 1000,
