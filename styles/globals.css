@@ -1469,9 +1469,10 @@ input[type='color']::-moz-color-swatch {
   border-color: rgba(196, 145, 85, 0.35);
 }
 
-/* Desktop shows 5 cards on a single row (similar cocktails + top
-   contributors). Mobile shows 4 in a 2×2 grid — the 5th card is hidden. */
-@media (max-width: 960px) {
+/* Desktop (≥ 820 px) shows 5 cards on a single row (similar cocktails +
+   top contributors). Tablet (640–819 px) drops to 4 and hides the 5th.
+   Mobile (< 640 px) collapses to a 2-wide grid. */
+@media (max-width: 819px) {
   .similar-grid,
   .dash-contributors {
     grid-template-columns: repeat(4, 1fr) !important;

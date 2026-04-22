@@ -136,7 +136,7 @@ export function ContactForm({ initialTopic = 'sales' }: Props) {
                         name="email"
                         type="email"
                         required
-                        placeholder="eli@casadragones.com"
+                        placeholder="you@aureliaspirits.com"
                       />
                     </div>
                     <div className="field">

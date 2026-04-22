@@ -1,6 +1,5 @@
 import { AuthShell } from '@/components/auth/AuthShell'
 import { LoginArt } from '@/components/auth/LoginArt'
-import { SsoRow } from '@/components/auth/SsoRow'
 import { LoginForm } from './LoginForm'
 import '../auth.css'
 
@@ -25,7 +24,6 @@ export default function LoginPage() {
       }
       art={<LoginArt />}
     >
-      <SsoRow mode="signin" />
       <LoginForm />
     </AuthShell>
   )

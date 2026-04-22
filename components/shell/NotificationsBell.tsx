@@ -88,25 +88,30 @@ export function NotificationsBell() {
         className="icon-btn"
         aria-label="Notifications"
         onClick={() => setOpen((o) => !o)}
+        style={{ position: 'relative', overflow: 'visible' }}
       >
         <Icon name="bell" size={15} />
         {unread > 0 && (
           <span
+            aria-hidden="true"
             style={{
               position: 'absolute',
-              top: 6,
-              right: 6,
-              minWidth: 16,
-              height: 16,
-              padding: '0 4px',
+              top: -4,
+              right: -4,
+              minWidth: 14,
+              height: 14,
+              padding: '0 3px',
               borderRadius: 999,
               background: 'var(--crit)',
               color: '#fff',
-              fontSize: 10,
-              fontWeight: 600,
-              display: 'grid',
-              placeItems: 'center',
+              fontSize: 9.5,
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               lineHeight: 1,
+              letterSpacing: 0,
+              boxShadow: '0 0 0 2px #fff',
               pointerEvents: 'none',
             }}
           >
