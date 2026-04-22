@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUser } from '@/lib/auth/session'
 import { AuthShell } from '@/components/auth/AuthShell'
-import { SignupArt } from '@/components/auth/SignupArt'
+import { AcceptInviteArt } from '@/components/auth/AcceptInviteArt'
 import { AcceptInviteForm } from './AcceptInviteForm'
 import '../auth.css'
 
@@ -20,6 +20,7 @@ type InviteRow = {
   invitation_email: string | null
   invitation_expires_at: string | null
   user_id: string | null
+  invited_by: string | null
   workspaces: { slug: string; name: string } | null
 }
 
@@ -38,7 +39,7 @@ export default async function AcceptInvitePage({ searchParams }: Props) {
   const { data } = await admin
     .from('memberships')
     .select(
-      'id, role, invitation_email, invitation_expires_at, user_id, workspaces(slug, name)',
+      'id, role, invitation_email, invitation_expires_at, user_id, invited_by, workspaces(slug, name)',
     )
     .eq('invitation_token', token)
     .maybeSingle()
@@ -74,6 +75,17 @@ export default async function AcceptInvitePage({ searchParams }: Props) {
   const inviteEmail = invite.invitation_email.toLowerCase()
   const emailMatch = signedInEmail === inviteEmail
 
+  // Resolve the inviter's name so the side-art can personalise the CTA.
+  let inviterName: string | null = null
+  if (invite.invited_by) {
+    const { data: inviter } = await admin
+      .from('profiles')
+      .select('full_name')
+      .eq('id', invite.invited_by)
+      .maybeSingle()
+    inviterName = (inviter as { full_name: string | null } | null)?.full_name ?? null
+  }
+
   return (
     <AuthShell
       envPill={invite.role.toUpperCase()}
@@ -96,7 +108,13 @@ export default async function AcceptInvitePage({ searchParams }: Props) {
           . Create your account below — it only takes a minute.
         </>
       }
-      art={<SignupArt />}
+      art={
+        <AcceptInviteArt
+          workspaceName={invite.workspaces.name}
+          role={invite.role}
+          inviterName={inviterName}
+        />
+      }
     >
       <AcceptInviteForm
         token={token}
@@ -139,7 +157,7 @@ function ErrorState({ title, message }: { title: string; message: string }) {
       kicker="Invitation"
       title={<>{title}</>}
       sub={<>{message}</>}
-      art={<SignupArt />}
+      art={<AcceptInviteArt workspaceName="ShakeBase" role="editor" />}
     >
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
         <Link href="/" className="auth-submit" style={{ textDecoration: 'none' }}>
