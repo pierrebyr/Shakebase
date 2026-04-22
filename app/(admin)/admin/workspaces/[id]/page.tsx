@@ -161,7 +161,7 @@ export default async function WorkspaceDetailPage({ params, searchParams }: Para
               color: '#fff',
               display: 'grid',
               placeItems: 'center',
-              fontFamily: 'Instrument Serif, Georgia, serif',
+              fontFamily: 'var(--font-display)',
               fontStyle: 'italic',
               fontSize: 26,
             }}
@@ -172,7 +172,7 @@ export default async function WorkspaceDetailPage({ params, searchParams }: Para
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <h1
                 style={{
-                  fontFamily: 'Instrument Serif, Georgia, serif',
+                  fontFamily: 'var(--font-display)',
                   fontStyle: 'italic',
                   fontWeight: 400,
                   fontSize: 28,

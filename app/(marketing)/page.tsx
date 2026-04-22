@@ -684,7 +684,7 @@ export default function MarketingHome() {
                   </div>
                 </div>
                 <div className="chart">
-                  <h6>Pours by week — Aurelia</h6>
+                  <div className="chart-title">Pours by week — Aurelia</div>
                   <div className="leg">LAST 12 WK</div>
                   <div className="yaxis">
                     <span>15k</span>
@@ -1260,7 +1260,7 @@ export default function MarketingHome() {
           <div className="sec-grid">
             <div className="sec-card">
               <div className="badge">SOC 2</div>
-              <h5>SOC 2 Type II</h5>
+              <h3>SOC 2 Type II</h3>
               <p>
                 Continuously audited by Prescient Assurance. Evidence and reports available under
                 NDA for every Studio and Enterprise customer.
@@ -1268,7 +1268,7 @@ export default function MarketingHome() {
             </div>
             <div className="sec-card">
               <div className="badge">GDPR</div>
-              <h5>GDPR compliant</h5>
+              <h3>GDPR compliant</h3>
               <p>
                 EU data residency, DPA on request, per-workspace retention controls, and
                 one-click data export on account termination.
@@ -1276,7 +1276,7 @@ export default function MarketingHome() {
             </div>
             <div className="sec-card">
               <div className="badge">AES-256</div>
-              <h5>Encrypted, isolated</h5>
+              <h3>Encrypted, isolated</h3>
               <p>
                 AES-256 at rest, TLS 1.3 in transit, per-tenant database isolation, SSO via
                 Google, Apple, Okta, and Azure AD.

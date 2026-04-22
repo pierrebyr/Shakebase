@@ -34,7 +34,7 @@ export default function AdminError({
           style={{
             padding: 14,
             marginBottom: 16,
-            fontFamily: 'IBM Plex Mono, monospace',
+            fontFamily: 'var(--font-mono)',
             fontSize: 12,
             color: 'var(--op-ink-3)',
           }}

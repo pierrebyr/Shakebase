@@ -43,9 +43,9 @@
   --radius-lg: 20px;
   --radius-xl: 28px;
 
-  --font-display: 'Fraunces', 'Instrument Serif', Georgia, serif;
-  --font-ui: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', Menlo, monospace;
+  --font-display: var(--font-fraunces), var(--font-instrument-serif), Georgia, serif;
+  --font-ui: var(--font-inter), var(--font-ibm-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), Menlo, monospace;
 }
 
 /* =========================================================================
@@ -63,7 +63,7 @@
   --ink-1: #111111;
   --ink-2: #3a3a3a;
   --ink-3: #6e6e6e;
-  --ink-4: #9a9a9a;
+  --ink-4: #757575; /* was #9a9a9a — bumped to pass WCAG AA (4.58:1 on white) */
   --ink-5: #c6c4bf;
 
   --line-1: rgba(10, 10, 10, 0.08);
@@ -113,18 +113,18 @@
   --shadow-2: 0 2px 4px rgba(10, 10, 10, 0.05), 0 10px 32px rgba(10, 10, 10, 0.06);
   --shadow-3: 0 4px 8px rgba(10, 10, 10, 0.07), 0 20px 48px rgba(10, 10, 10, 0.08);
 
-  --font-display: 'Fraunces', 'Instrument Serif', Georgia, serif;
-  --font-ui: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', Menlo, monospace;
+  --font-display: var(--font-fraunces), var(--font-instrument-serif), Georgia, serif;
+  --font-ui: var(--font-inter), var(--font-ibm-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), Menlo, monospace;
 
   --density-gap: 20px;
   --density-pad: 22px;
 }
 
 [data-type='technical'] {
-  --font-display: 'Instrument Serif', Georgia, serif;
-  --font-ui: 'IBM Plex Sans', Inter, sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --font-display: var(--font-instrument-serif), Georgia, serif;
+  --font-ui: var(--font-ibm-plex-sans), var(--font-inter), sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), monospace;
   --bg: #f7f5ef;
   --bg-sunken: #ece8de;
 }

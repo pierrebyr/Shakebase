@@ -73,7 +73,7 @@ export async function ImpersonationBanner() {
           style={{
             padding: '5px 12px',
             borderRadius: 6,
-            fontFamily: 'IBM Plex Mono, monospace',
+            fontFamily: 'var(--font-mono)',
             fontSize: 11,
             letterSpacing: '0.04em',
             background: 'rgba(0,0,0,0.35)',

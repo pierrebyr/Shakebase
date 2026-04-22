@@ -2,7 +2,7 @@
    the tenant or admin apps. Relies on CSS variables already defined in
    globals.css (--ink-*, --line-*, --bg, --accent*, --font-*). */
 
-.mk-scope { font-family: var(--font-ui, 'Inter'), system-ui, sans-serif; font-size: 15px; line-height: 1.55; color: var(--ink-1); overflow-x: clip; }
+.mk-scope { font-family: var(--font-ui, var(--font-ui)), system-ui, sans-serif; font-size: 15px; line-height: 1.55; color: var(--ink-1); overflow-x: clip; }
 .mk-scope h1, .mk-scope h2, .mk-scope h3, .mk-scope h4, .mk-scope h5, .mk-scope h6 { text-wrap: balance; }
 .mk-scope p { text-wrap: pretty; }
 .mk-scope * { box-sizing: border-box; }
@@ -41,8 +41,9 @@
 .mk-scope .mk-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: transform 120ms, background 120ms, box-shadow 180ms, border-color 120ms; font-family: inherit; white-space: nowrap; border: 1px solid transparent; text-decoration: none; }
 .mk-scope .mk-btn.pri { background: var(--ink-1); color: #fff; border-color: var(--ink-1); box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08); }
 .mk-scope .mk-btn.pri:hover { background: #000; transform: translateY(-1px); }
-.mk-scope .mk-btn.amber { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 10px 24px -8px rgba(196,145,85,0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
-.mk-scope .mk-btn.amber:hover { background: #b58044; transform: translateY(-1px); }
+/* Amber CTA — darker hue so white text passes WCAG AA (4.5:1 contrast). */
+.mk-scope .mk-btn.amber { background: #8a5f2e; color: #fff; border-color: #8a5f2e; box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 10px 24px -8px rgba(138,95,46,0.55), inset 0 1px 0 rgba(255,255,255,0.15); }
+.mk-scope .mk-btn.amber:hover { background: #6f4a1f; transform: translateY(-1px); }
 .mk-scope .mk-btn.sec { background: #fff; color: var(--ink-1); border-color: var(--line-1); }
 .mk-scope .mk-btn.sec:hover { border-color: var(--ink-3); }
 .mk-scope .mk-btn.ghost { background: transparent; color: var(--ink-2); border-color: transparent; }
@@ -242,7 +243,7 @@
 .mk-scope .mk-analytics .chart .b.last::before { content: '12.4k'; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 9px; color: #fff; background: #1a1918; padding: 3px 6px; border-radius: 4px; white-space: nowrap; }
 .mk-scope .mk-analytics .chart .b.last::after { content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); border: 3px solid transparent; border-top-color: #1a1918; }
 .mk-scope .mk-analytics .chart .xaxis { position: absolute; left: 42px; right: 14px; bottom: 8px; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 8.5px; color: var(--ink-4); letter-spacing: 0.08em; }
-.mk-scope .mk-analytics .chart h6 { position: absolute; top: 10px; left: 42px; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 14px; margin: 0; }
+.mk-scope .mk-analytics .chart .chart-title { position: absolute; top: 10px; left: 42px; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 14px; margin: 0; }
 .mk-scope .mk-analytics .chart .leg { position: absolute; top: 10px; right: 14px; font-family: var(--font-mono); font-size: 9.5px; color: var(--ink-4); letter-spacing: 0.1em; }
 
 /* Bento */
@@ -359,7 +360,7 @@
 @media (max-width: 780px) { .mk-scope .sec-grid { grid-template-columns: 1fr; } }
 .mk-scope .sec-card { padding: 26px; border: 1px solid var(--line-1); border-radius: 16px; background: #fff; }
 .mk-scope .sec-card .badge { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-wash); color: var(--accent-ink); display: grid; place-items: center; margin-bottom: 18px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; font-weight: 500; }
-.mk-scope .sec-card h5 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 8px; }
+.mk-scope .sec-card h3 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 8px; }
 .mk-scope .sec-card p { font-size: 13.5px; color: var(--ink-3); line-height: 1.55; margin: 0; }
 
 /* Pricing */
@@ -433,11 +434,11 @@
 @media (max-width: 820px) { .mk-scope .foot-grid { grid-template-columns: 1fr 1fr; gap: 40px 24px; } }
 .mk-scope .foot .brand-col .brand { color: #fff; }
 .mk-scope .foot .brand-col p { font-size: 13px; color: rgba(255,255,255,0.55); max-width: 32ch; margin: 14px 0 20px; line-height: 1.55; }
-.mk-scope .foot .mk-col h6 { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin: 0 0 18px; font-weight: 500; }
+.mk-scope .foot .mk-col .foot-col-title { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.72); margin: 0 0 18px; font-weight: 500; }
 .mk-scope .foot .mk-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.mk-scope .foot .mk-col a { font-size: 13.5px; color: rgba(255,255,255,0.75); }
+.mk-scope .foot .mk-col a { font-size: 13.5px; color: rgba(255,255,255,0.82); }
 .mk-scope .foot .mk-col a:hover { color: #fff; }
-.mk-scope .foot .mk-col .foot-soon { font-size: 13.5px; color: rgba(255,255,255,0.35); cursor: default; }
+.mk-scope .foot .mk-col .foot-soon { font-size: 13.5px; color: rgba(255,255,255,0.55); cursor: default; }
 
 /* ── Micro-interactions ──────────────────────────────────────────────── */
 

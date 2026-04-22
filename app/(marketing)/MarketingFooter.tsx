@@ -11,9 +11,9 @@ export function MarketingFooter() {
               <span>ShakeBase</span>
             </Link>
             <p>The cocktail intelligence platform for spirits brands and bar groups.</p>
-            <h6
+            <div
               style={{
-                color: 'rgba(255,255,255,0.4)',
+                color: 'rgba(255,255,255,0.72)',
                 marginBottom: 10,
                 fontFamily: 'var(--font-mono)',
                 fontSize: 10.5,
@@ -23,7 +23,7 @@ export function MarketingFooter() {
               }}
             >
               Get the monthly pour
-            </h6>
+            </div>
             <form
               className="foot-newsletter"
               action="/api/newsletter"
@@ -34,7 +34,7 @@ export function MarketingFooter() {
             </form>
           </div>
           <div className="mk-col">
-            <h6>Product</h6>
+            <div className="foot-col-title">Product</div>
             <ul>
               <li>
                 <Link href="/#product">Library</Link>
@@ -57,7 +57,7 @@ export function MarketingFooter() {
             </ul>
           </div>
           <div className="mk-col">
-            <h6>Company</h6>
+            <div className="foot-col-title">Company</div>
             <ul>
               <li>
                 <span className="foot-soon">About · soon</span>
@@ -77,7 +77,7 @@ export function MarketingFooter() {
             </ul>
           </div>
           <div className="mk-col">
-            <h6>Developers</h6>
+            <div className="foot-col-title">Developers</div>
             <ul>
               <li>
                 <span className="foot-soon">API reference · soon</span>
@@ -97,7 +97,7 @@ export function MarketingFooter() {
             </ul>
           </div>
           <div className="mk-col">
-            <h6>Legal</h6>
+            <div className="foot-col-title">Legal</div>
             <ul>
               <li>
                 <Link href="/terms">Terms</Link>

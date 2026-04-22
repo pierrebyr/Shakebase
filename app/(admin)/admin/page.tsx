@@ -333,7 +333,7 @@ export default async function AdminOverviewPage() {
                       color: '#fff',
                       display: 'grid',
                       placeItems: 'center',
-                      fontFamily: 'Instrument Serif, Georgia, serif',
+                      fontFamily: 'var(--font-display)',
                       fontStyle: 'italic',
                       fontSize: 15,
                     }}

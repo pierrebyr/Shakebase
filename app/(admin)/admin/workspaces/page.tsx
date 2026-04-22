@@ -198,7 +198,7 @@ export default async function AdminWorkspacesPage({ searchParams }: Params) {
                             color: '#fff',
                             display: 'grid',
                             placeItems: 'center',
-                            fontFamily: 'Instrument Serif, Georgia, serif',
+                            fontFamily: 'var(--font-display)',
                             fontStyle: 'italic',
                             fontSize: 15,
                           }}

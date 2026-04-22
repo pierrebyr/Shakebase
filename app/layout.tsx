@@ -1,5 +1,46 @@
 import type { Metadata } from 'next'
+import {
+  Fraunces,
+  Inter,
+  Instrument_Serif,
+  IBM_Plex_Sans,
+  IBM_Plex_Mono,
+} from 'next/font/google'
 import '@/styles/globals.css'
+
+// next/font self-hosts and inlines fallback metrics, which removes the
+// render-blocking <link> to fonts.googleapis.com and cuts the font-
+// network chain that Lighthouse flagged on the landing page.
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  variable: '--font-fraunces',
+  display: 'swap',
+})
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-instrument-serif',
+  display: 'swap',
+})
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-ibm-plex-sans',
+  display: 'swap',
+})
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-ibm-plex-mono',
+  display: 'swap',
+})
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'shakebase.co'
 const SITE_URL = `https://${ROOT}`
@@ -67,16 +108,15 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const fontClass = `${fraunces.variable} ${inter.variable} ${instrumentSerif.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`
   return (
-    <html lang="en" data-type="technical" data-density="comfortable" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&family=Instrument+Serif&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="en"
+      data-type="technical"
+      data-density="comfortable"
+      suppressHydrationWarning
+      className={fontClass}
+    >
       <body>{children}</body>
     </html>
   )
