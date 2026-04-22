@@ -32,6 +32,24 @@ type MembershipRow = {
 
 type ProfileRow = { id: string; full_name: string | null; department: string | null }
 
+// Race a Supabase query against an explicit deadline. Supabase's Node client
+// can hang on upstream hiccups without ever resolving, which is what pushed
+// /settings/team past Vercel's 10s serverless ceiling and returned 500s. We
+// accept `any` here because PostgrestBuilder is thenable but not a plain
+// Promise.
+async function withTimeout<T>(
+  p: PromiseLike<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  return Promise.race([
+    Promise.resolve(p),
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`[team] ${label} timed out after ${ms}ms`)), ms),
+    ),
+  ])
+}
+
 const ROLE_META: Record<
   Role | 'owner' | 'editor' | 'viewer',
   {
@@ -134,26 +152,40 @@ export default async function TeamSettingsPage() {
     { full_name: string | null; department: string | null; email?: string; last_sign_in_at?: string | null; edits?: number }
   >()
 
+  // All three of these are independent — run in parallel and race each
+  // against an explicit 4s timeout so a single slow upstream can't push
+  // the whole function past Vercel's 10s serverless limit.
   if (activeIds.length > 0) {
-    // Profiles (own table, cheap).
-    try {
-      const { data: profs } = await admin
-        .from('profiles')
-        .select('id, full_name, department')
-        .in('id', activeIds)
+    const [profsRes, usersRes, editLogsRes] = await Promise.allSettled([
+      withTimeout(
+        admin.from('profiles').select('id, full_name, department').in('id', activeIds),
+        4000,
+        'profiles',
+      ),
+      withTimeout(admin.auth.admin.listUsers({ perPage: 200 }), 4000, 'listUsers'),
+      withTimeout(
+        admin
+          .from('audit_logs')
+          .select('actor_user_id')
+          .eq('workspace_id', workspace.id)
+          .in('actor_user_id', activeIds),
+        4000,
+        'edit-counts',
+      ),
+    ])
+
+    if (profsRes.status === 'fulfilled') {
+      const { data: profs } = profsRes.value as { data: ProfileRow[] | null }
       for (const p of (profs ?? []) as ProfileRow[]) {
         profiles.set(p.id, { full_name: p.full_name, department: p.department })
       }
-    } catch (err) {
-      console.error('[team] profiles fetch failed', err)
+    } else {
+      console.error('[team] profiles fetch failed', profsRes.reason)
     }
 
-    // Auth users for email + last_sign_in. Most likely source of transient
-    // timeouts on cold starts — degrade gracefully if it fails so the page
-    // still renders with full_name only.
-    try {
-      const { data: usersList } = await admin.auth.admin.listUsers({ perPage: 200 })
-      for (const u of usersList.users) {
+    if (usersRes.status === 'fulfilled') {
+      const usersList = (usersRes.value as { data: { users: { id: string; email?: string; last_sign_in_at?: string | null }[] } | null }).data
+      for (const u of usersList?.users ?? []) {
         if (activeIds.includes(u.id)) {
           const ex = profiles.get(u.id) ?? { full_name: null, department: null }
           profiles.set(u.id, {
@@ -163,17 +195,12 @@ export default async function TeamSettingsPage() {
           })
         }
       }
-    } catch (err) {
-      console.error('[team] listUsers failed', err)
+    } else {
+      console.error('[team] listUsers failed', usersRes.reason)
     }
 
-    // Edit counts from audit_logs (create/update/delete actions by user within workspace).
-    try {
-      const { data: logs } = await admin
-        .from('audit_logs')
-        .select('actor_user_id')
-        .eq('workspace_id', workspace.id)
-        .in('actor_user_id', activeIds)
+    if (editLogsRes.status === 'fulfilled') {
+      const { data: logs } = editLogsRes.value as { data: { actor_user_id: string }[] | null }
       const counts = new Map<string, number>()
       for (const l of (logs ?? []) as { actor_user_id: string }[]) {
         counts.set(l.actor_user_id, (counts.get(l.actor_user_id) ?? 0) + 1)
@@ -182,8 +209,8 @@ export default async function TeamSettingsPage() {
         const ex = profiles.get(uid)
         if (ex) profiles.set(uid, { ...ex, edits: n })
       }
-    } catch (err) {
-      console.error('[team] edit counts failed', err)
+    } else {
+      console.error('[team] edit counts failed', editLogsRes.reason)
     }
   }
 
@@ -191,12 +218,17 @@ export default async function TeamSettingsPage() {
   const inviterIds = Array.from(new Set(pending.map((p) => p.invited_by).filter(Boolean) as string[]))
   const inviterNames = new Map<string, string>()
   if (inviterIds.length > 0) {
-    const { data: profs } = await admin
-      .from('profiles')
-      .select('id, full_name')
-      .in('id', inviterIds)
-    for (const p of (profs ?? []) as ProfileRow[]) {
-      inviterNames.set(p.id, p.full_name ?? 'Someone')
+    try {
+      const { data: profs } = await withTimeout(
+        admin.from('profiles').select('id, full_name').in('id', inviterIds),
+        3000,
+        'inviter-names',
+      )
+      for (const p of (profs ?? []) as ProfileRow[]) {
+        inviterNames.set(p.id, p.full_name ?? 'Someone')
+      }
+    } catch (err) {
+      console.error('[team] inviter names failed', err)
     }
   }
 
@@ -220,12 +252,16 @@ export default async function TeamSettingsPage() {
   }
   let logs: LogRow[] = []
   try {
-    const { data: logData } = await admin
-      .from('audit_logs')
-      .select('id, action, actor_user_id, target_type, target_id, metadata, created_at')
-      .eq('workspace_id', workspace.id)
-      .order('created_at', { ascending: false })
-      .limit(6)
+    const { data: logData } = await withTimeout(
+      admin
+        .from('audit_logs')
+        .select('id, action, actor_user_id, target_type, target_id, metadata, created_at')
+        .eq('workspace_id', workspace.id)
+        .order('created_at', { ascending: false })
+        .limit(6),
+      3000,
+      'audit-log',
+    )
     logs = (logData ?? []) as LogRow[]
   } catch (err) {
     console.error('[team] audit_logs fetch failed', err)
@@ -235,10 +271,11 @@ export default async function TeamSettingsPage() {
   const actorIds = Array.from(new Set(logs.map((l) => l.actor_user_id).filter(Boolean) as string[]))
   if (actorIds.length > 0) {
     try {
-      const { data: profs } = await admin
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', actorIds)
+      const { data: profs } = await withTimeout(
+        admin.from('profiles').select('id, full_name').in('id', actorIds),
+        3000,
+        'actor-profiles',
+      )
       for (const p of (profs ?? []) as ProfileRow[]) {
         actorNames.set(p.id, p.full_name ?? 'Someone')
       }
