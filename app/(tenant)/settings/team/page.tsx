@@ -398,6 +398,73 @@ async function renderTeamPage() {
     transferableCount: transferableMembers.length,
   })
 
+  // TEMPORARY DEBUG: render just the raw data, no child components. If this
+  // renders successfully, the 500 is in one of the child components
+  // (InviteModalTrigger, DangerZone, StatCard, Avatar, etc.). If it still
+  // fails, the bug is higher up (layout, fonts, CSS).
+  const DEBUG_TEAM_PAGE = true
+  if (DEBUG_TEAM_PAGE) {
+    return (
+      <div className="page" style={{ maxWidth: 960 }}>
+        <div className="page-head">
+          <div className="page-kicker" style={{ color: 'var(--crit)' }}>
+            Debug · team page data dump
+          </div>
+          <h1 className="page-title">Team data.</h1>
+          <p className="page-sub">
+            If you see this page, data assembly succeeded. The 500 was in a
+            child component&apos;s render.
+          </p>
+        </div>
+        <pre
+          style={{
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            fontSize: 12,
+            fontFamily: 'var(--font-mono)',
+            padding: 18,
+            background: 'var(--bg-sunken)',
+            border: '1px solid var(--line-1)',
+            borderRadius: 10,
+            color: 'var(--ink-1)',
+          }}
+        >
+          {JSON.stringify(
+            {
+              workspace: {
+                id: workspace.id,
+                slug: workspace.slug,
+                name: workspace.name,
+                subscription_status: workspace.subscription_status,
+              },
+              user: { id: user.id, email: user.email },
+              me,
+              active: active.map((m) => ({
+                id: m.id,
+                user_id: m.user_id,
+                role: m.role,
+                profile: profiles.get(m.user_id!) ?? null,
+              })),
+              pending: pending.map((p) => ({
+                id: p.id,
+                email: p.invitation_email,
+                role: p.role,
+                invited_by: p.invited_by,
+              })),
+              inviterNames: Object.fromEntries(inviterNames),
+              logs: logs.map((l) => ({ id: l.id, action: l.action, metadata: l.metadata })),
+              actorNames: Object.fromEntries(actorNames),
+              counts,
+              transferableMembers,
+            },
+            null,
+            2,
+          )}
+        </pre>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="page-head">
