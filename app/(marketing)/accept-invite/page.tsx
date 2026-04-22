@@ -1,7 +1,16 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUser } from '@/lib/auth/session'
+import { AuthShell } from '@/components/auth/AuthShell'
+import { SignupArt } from '@/components/auth/SignupArt'
 import { AcceptInviteForm } from './AcceptInviteForm'
+import '../auth.css'
+
+export const metadata = {
+  title: 'Accept invitation · ShakeBase',
+  description: 'Accept your invitation to join a ShakeBase workspace.',
+  alternates: { canonical: '/accept-invite' },
+}
 
 type Props = { searchParams: Promise<{ token?: string }> }
 
@@ -18,9 +27,9 @@ export default async function AcceptInvitePage({ searchParams }: Props) {
   const { token } = await searchParams
   if (!token) {
     return (
-      <ErrorPanel
+      <ErrorState
         title="Missing token"
-        message="Your invitation link is incomplete. Ask the owner to re-send it."
+        message="Your invitation link is incomplete. Ask the workspace owner to re-send it."
       />
     )
   }
@@ -37,23 +46,23 @@ export default async function AcceptInvitePage({ searchParams }: Props) {
 
   if (!invite || !invite.workspaces || !invite.invitation_email) {
     return (
-      <ErrorPanel
+      <ErrorState
         title="Invitation not found"
-        message="This invite doesn't exist anymore. It may have been revoked. Ask the owner for a new one."
+        message="This invite doesn't exist anymore. It may have been revoked. Ask the owner for a fresh one."
       />
     )
   }
   if (invite.user_id) {
     return (
-      <ErrorPanel
+      <ErrorState
         title="Already accepted"
-        message="This invitation was already used. Try signing in."
+        message="This invitation was already used. Try signing in instead."
       />
     )
   }
   if (invite.invitation_expires_at && new Date(invite.invitation_expires_at) < new Date()) {
     return (
-      <ErrorPanel
+      <ErrorState
         title="Invitation expired"
         message="This invite is no longer valid. Ask the owner to send a fresh one."
       />
@@ -66,48 +75,78 @@ export default async function AcceptInvitePage({ searchParams }: Props) {
   const emailMatch = signedInEmail === inviteEmail
 
   return (
-    <main className="page" style={{ maxWidth: 460, paddingTop: 72 }}>
-      <div className="page-kicker">You&apos;re invited</div>
-      <h1 className="page-title" style={{ fontSize: 40, textWrap: 'balance' }}>
-        Join {invite.workspaces.name}.
-      </h1>
-      <p className="page-sub">
-        You&apos;ve been invited to collaborate as a{' '}
-        <span style={{ color: 'var(--accent-ink)', fontWeight: 500, textTransform: 'capitalize' }}>
-          {invite.role}
-        </span>{' '}
-        on ShakeBase.
+    <AuthShell
+      envPill={invite.role.toUpperCase()}
+      helpText="Already have a ShakeBase account?"
+      helpHref="/login"
+      helpLink="Sign in →"
+      kicker={`You're invited · ${invite.workspaces.name}`}
+      title={
+        <>
+          Join{' '}
+          <span style={{ fontStyle: 'italic' }}>{invite.workspaces.name}.</span>
+        </>
+      }
+      sub={
+        <>
+          You&apos;ve been invited to collaborate as a{' '}
+          <span style={{ color: 'var(--accent-ink)', fontWeight: 500, textTransform: 'capitalize' }}>
+            {invite.role}
+          </span>
+          . Create your account below — it only takes a minute.
+        </>
+      }
+      art={<SignupArt />}
+    >
+      <AcceptInviteForm
+        token={token}
+        email={invite.invitation_email}
+        workspaceName={invite.workspaces.name}
+        role={invite.role}
+        signedInEmail={signedInEmail}
+        emailMatch={emailMatch}
+      />
+      <p
+        style={{
+          marginTop: 16,
+          fontSize: 11.5,
+          color: 'var(--ink-4)',
+          textAlign: 'center',
+          lineHeight: 1.55,
+        }}
+      >
+        By joining, you agree to ShakeBase&apos;s{' '}
+        <Link href="/terms" style={{ color: 'var(--ink-3)', borderBottom: '1px solid var(--line-1)' }}>
+          Terms
+        </Link>{' '}
+        and{' '}
+        <Link href="/privacy" style={{ color: 'var(--ink-3)', borderBottom: '1px solid var(--line-1)' }}>
+          Privacy Policy
+        </Link>
+        .
       </p>
-
-      <div style={{ marginTop: 24 }}>
-        <AcceptInviteForm
-          token={token}
-          email={invite.invitation_email}
-          workspaceName={invite.workspaces.name}
-          role={invite.role}
-          signedInEmail={signedInEmail}
-          emailMatch={emailMatch}
-        />
-      </div>
-
-      <p style={{ marginTop: 16, fontSize: 12, color: 'var(--ink-4)', textAlign: 'center' }}>
-        By joining, you agree to ShakeBase&apos;s terms.
-      </p>
-    </main>
+    </AuthShell>
   )
 }
 
-function ErrorPanel({ title, message }: { title: string; message: string }) {
+function ErrorState({ title, message }: { title: string; message: string }) {
   return (
-    <main className="page" style={{ maxWidth: 460, paddingTop: 72 }}>
-      <div className="page-kicker">Invitation</div>
-      <h1 className="page-title" style={{ fontSize: 36 }}>
-        {title}
-      </h1>
-      <p className="page-sub">{message}</p>
-      <Link href="/" className="btn-secondary" style={{ marginTop: 18 }}>
-        Back to ShakeBase
-      </Link>
-    </main>
+    <AuthShell
+      envPill="Invite"
+      helpText="Need a new invitation?"
+      helpHref="/contact"
+      helpLink="Contact us →"
+      kicker="Invitation"
+      title={<>{title}</>}
+      sub={<>{message}</>}
+      art={<SignupArt />}
+    >
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+        <Link href="/" className="auth-submit" style={{ textDecoration: 'none' }}>
+          Back to ShakeBase
+          <span className="arrow">→</span>
+        </Link>
+      </div>
+    </AuthShell>
   )
 }
