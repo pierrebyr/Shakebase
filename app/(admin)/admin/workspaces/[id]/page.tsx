@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { workspaceUrl } from '@/lib/cookies'
 import { OpIcon } from '@/components/admin/Icon'
 import {
   fmtDate,
@@ -219,7 +220,7 @@ export default async function WorkspaceDetailPage({ params, searchParams }: Para
               Open in Stripe
             </a>
           )}
-          <a href={`http://${w.slug}.lvh.me:3000`} target="_blank" rel="noreferrer" className="op-btn">
+          <a href={workspaceUrl(w.slug, '/dashboard')} target="_blank" rel="noreferrer" className="op-btn">
             <OpIcon name="external" />
             Open workspace
           </a>
