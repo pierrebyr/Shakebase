@@ -1,0 +1,41 @@
+# Local Supabase dev config.
+# See https://supabase.com/docs/guides/cli/config
+
+project_id = "shakebase"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://lvh.me:3000"
+additional_redirect_urls = [
+  "http://lvh.me:3000/**",
+  "http://*.lvh.me:3000/**",
+]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+# We enforce email confirmation in prod; off in local for speed
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"

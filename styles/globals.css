@@ -1,0 +1,1446 @@
+@import "tailwindcss";
+
+/* Reduced-motion guard — users who opt out get no transitions/animations. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* NB: `scroll-behavior: smooth` on <html> interacts poorly with scroll-
+   driven animations (progress bar, parallax). Tiny wheel deltas get
+   spring-eased and the page feels jittery. Keep native scroll. */
+
+/* =========================================================================
+   Design tokens — ported from prototype src/styles.css
+   Tailwind v4 picks up these as utilities via @theme
+   ========================================================================= */
+
+@theme {
+  --color-bg: #fbfaf7;
+  --color-bg-elev: #ffffff;
+  --color-bg-sunken: #f3f1ec;
+
+  --color-ink-1: #111111;
+  --color-ink-2: #3a3a3a;
+  --color-ink-3: #6e6e6e;
+  --color-ink-4: #9a9a9a;
+  --color-ink-5: #c6c4bf;
+
+  --color-accent: #c49155;
+  --color-accent-ink: #8a5f2e;
+  --color-accent-wash: #f5e9d6;
+
+  --color-ok: #3a7f5a;
+  --color-warn: #c48a1f;
+  --color-crit: #b24040;
+
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --font-display: 'Fraunces', 'Instrument Serif', Georgia, serif;
+  --font-ui: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', Menlo, monospace;
+}
+
+/* =========================================================================
+   Global surfaces, typography, component styles (legacy classes from
+   prototype, kept because they match the design 1:1). New components can
+   prefer Tailwind utilities; legacy classes are still valid.
+   ========================================================================= */
+
+:root {
+  --bg: #fbfaf7;
+  --bg-elev: #ffffff;
+  --bg-sunken: #f3f1ec;
+  --bg-glass: rgba(255, 255, 255, 0.72);
+
+  --ink-1: #111111;
+  --ink-2: #3a3a3a;
+  --ink-3: #6e6e6e;
+  --ink-4: #9a9a9a;
+  --ink-5: #c6c4bf;
+
+  --line-1: rgba(10, 10, 10, 0.08);
+  --line-2: rgba(10, 10, 10, 0.04);
+
+  --accent: #c49155;
+  --accent-ink: #8a5f2e;
+  --accent-wash: #f5e9d6;
+}
+
+/* ──────────── Named accent palettes ────────────
+   Applied via <html data-accent="agave"> etc. Default is "amber". */
+:root[data-accent='agave'] {
+  --accent: #5a7d62;
+  --accent-ink: #3d5a44;
+  --accent-wash: #d6e4d9;
+}
+:root[data-accent='hibiscus'] {
+  --accent: #8c5a7f;
+  --accent-ink: #5e3e55;
+  --accent-wash: #ecd6e4;
+}
+:root[data-accent='lagoon'] {
+  --accent: #2f5e7a;
+  --accent-ink: #1f4353;
+  --accent-wash: #d0e0e9;
+}
+:root[data-reduce-motion='true'] * {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+}
+
+:root {
+
+  --ok: #3a7f5a;
+  --warn: #c48a1f;
+  --crit: #b24040;
+
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  --shadow-1: 0 1px 2px rgba(10, 10, 10, 0.04), 0 4px 12px rgba(10, 10, 10, 0.04);
+  --shadow-2: 0 2px 4px rgba(10, 10, 10, 0.05), 0 10px 32px rgba(10, 10, 10, 0.06);
+  --shadow-3: 0 4px 8px rgba(10, 10, 10, 0.07), 0 20px 48px rgba(10, 10, 10, 0.08);
+
+  --font-display: 'Fraunces', 'Instrument Serif', Georgia, serif;
+  --font-ui: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', Menlo, monospace;
+
+  --density-gap: 20px;
+  --density-pad: 22px;
+}
+
+[data-type='technical'] {
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-ui: 'IBM Plex Sans', Inter, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --bg: #f7f5ef;
+  --bg-sunken: #ece8de;
+}
+
+html,
+body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  background: var(--bg);
+  color: var(--ink-1);
+}
+
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* App shell */
+.app {
+  display: grid;
+  grid-template-columns: 236px 1fr;
+  min-height: 100vh;
+  background: var(--bg);
+  background-image: radial-gradient(1200px 600px at 15% -10%, rgba(196, 145, 85, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 110% 0%, rgba(196, 145, 85, 0.05), transparent 60%);
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  padding: 18px 14px 18px 18px;
+  border-right: 1px solid var(--line-1);
+  background: var(--bg-glass);
+  backdrop-filter: blur(22px) saturate(160%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 5;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 12px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: radial-gradient(120% 120% at 20% 20%, #ffe9c8, #c49155 60%, #8a5f2e);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(196, 145, 85, 0.25);
+  position: relative;
+}
+
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), transparent 50%);
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.brand-env {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-left: auto;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 8px 10px 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  font-size: 13.5px;
+  font-weight: 450;
+  transition: background 120ms ease;
+  width: 100%;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: rgba(10, 10, 10, 0.03);
+}
+
+.nav-item[data-active='true'] {
+  background: #fff;
+  color: var(--ink-1);
+  font-weight: 500;
+  box-shadow: var(--shadow-1), inset 0 0 0 1px var(--line-1);
+}
+
+.nav-ico {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+
+.nav-item[data-active='true'] .nav-ico {
+  color: var(--accent-ink);
+}
+
+.nav-badge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-4);
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  padding: 10px;
+  border-top: 1px solid var(--line-2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e8d4b3, #c49155);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 28px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(22px) saturate(160%);
+  border-bottom: 1px solid var(--line-1);
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.crumbs strong {
+  color: var(--ink-1);
+  font-weight: 500;
+}
+
+.crumbs .sep {
+  color: var(--ink-5);
+}
+
+.search {
+  margin-left: 16px;
+  flex: 1;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: #fff;
+  border-radius: 999px;
+  border: 1px solid var(--line-1);
+  color: var(--ink-3);
+  font-size: 12.5px;
+  box-shadow: var(--shadow-1);
+}
+
+.search input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  flex: 1;
+  color: var(--ink-1);
+}
+
+.top-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-2);
+  background: #fff;
+  border: 1px solid var(--line-1);
+  box-shadow: var(--shadow-1);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ink-1);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+  box-shadow: var(--shadow-2);
+  transition: transform 100ms ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-0.5px);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-1);
+  border: 1px solid var(--line-1);
+  font-size: 12.5px;
+  font-weight: 500;
+  box-shadow: var(--shadow-1);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.btn-ghost:hover {
+  background: var(--bg-sunken);
+  color: var(--ink-1);
+}
+
+.page {
+  padding: 28px 36px 80px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.page-head {
+  margin-bottom: 28px;
+}
+
+.page-kicker {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin-bottom: 10px;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 44px;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  font-weight: 400;
+  margin: 0;
+  color: var(--ink-1);
+}
+
+.page-sub {
+  color: var(--ink-3);
+  font-size: 14px;
+  margin-top: 10px;
+  max-width: 60ch;
+}
+
+.card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+}
+
+.card-pad {
+  padding: var(--density-pad);
+}
+
+.panel-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 450;
+  white-space: nowrap;
+  border: 1px solid var(--line-2);
+}
+
+.pill.ok {
+  background: #e3f0e9;
+  color: var(--ok);
+  border-color: transparent;
+}
+
+.pill.crit {
+  background: #f6dede;
+  color: var(--crit);
+  border-color: transparent;
+}
+
+.drink-orb {
+  position: relative;
+  border-radius: 999px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.drink-orb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 120% at 30% 20%, var(--orb-from) 0%, var(--orb-to) 65%, #1a1a1a 180%);
+}
+
+.drink-orb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 40% at 30% 22%, rgba(255, 255, 255, 0.55), transparent 70%),
+    radial-gradient(18% 12% at 72% 78%, rgba(255, 255, 255, 0.25), transparent 70%);
+  mix-blend-mode: screen;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Form inputs — shared across signup/login/settings */
+.sb-input {
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--line-1);
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--ink-1);
+  outline: none;
+  transition: border-color 120ms, box-shadow 160ms;
+}
+
+.sb-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(196, 145, 85, 0.15);
+}
+
+.sb-input[aria-invalid='true'] {
+  border-color: var(--crit);
+}
+
+/* Color swatch inputs — strip the browser's default padding + border so
+   the whole square shows the selected colour cleanly. */
+input[type='color'] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 0;
+  overflow: hidden;
+}
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: inherit;
+}
+input[type='color']::-moz-color-swatch {
+  border: none;
+  border-radius: inherit;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 320ms ease both;
+}
+
+/* Creator profile responsive: collapse the 2-col body to single column
+   when there's not enough room for both rail + main. */
+@media (max-width: 1100px) {
+  .creator-body {
+    grid-template-columns: 1fr !important;
+  }
+  .creator-rail {
+    position: static !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Cocktail detail — hero grid + responsive behaviour
+   ──────────────────────────────────────────────────────────────── */
+
+.cocktail-hero-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 0;
+  align-items: stretch;
+}
+.cocktail-hero-body {
+  padding: 40px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+.cocktail-hero-image {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.cocktail-specs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.cocktail-body {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .cocktail-hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .cocktail-hero-image {
+    order: -1;
+    aspect-ratio: 4 / 3;
+  }
+  .cocktail-hero-body {
+    padding: 28px 24px;
+  }
+  .cocktail-specs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cocktail-body {
+    grid-template-columns: 1fr;
+  }
+  .cocktail-title {
+    font-size: 40px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .cocktail-specs {
+    grid-template-columns: 1fr;
+  }
+  .cocktail-specs > * {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .cocktail-specs > *:last-child {
+    border-bottom: 0;
+  }
+  .cocktail-title {
+    font-size: 34px !important;
+  }
+}
+
+/* ===================================================================
+   Cocktail card — library grid. Image support + lift-on-hover.
+   =================================================================== */
+.cocktail-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  gap: 14px;
+  transition:
+    transform 180ms ease,
+    box-shadow 220ms ease,
+    border-color 180ms ease;
+  will-change: transform;
+}
+.cocktail-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-3);
+  border-color: rgba(196, 145, 85, 0.35);
+}
+.cocktail-card-thumb {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.cocktail-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 520ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.cocktail-card:hover .cocktail-card-img {
+  transform: scale(1.04);
+}
+.collection-card {
+  transition:
+    transform 200ms ease,
+    box-shadow 220ms ease,
+    border-color 180ms ease;
+  height: 100%;
+}
+.collection-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+.collection-card-del {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  pointer-events: none;
+}
+.collection-card:hover .collection-card-del,
+.collection-card:focus-within .collection-card-del {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.collection-card-del:hover {
+  background: #fff !important;
+  color: var(--crit) !important;
+  box-shadow: 0 2px 8px rgba(224,88,88,0.2);
+}
+.ingredient-pill {
+  text-decoration: none;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.ingredient-pill:hover {
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+  border-color: rgba(196, 145, 85, 0.35);
+}
+.ingredient-link {
+  text-decoration: none;
+  transition: color 140ms ease;
+}
+.ingredient-link:hover {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ws-ing-row:hover {
+  background: var(--bg-sunken);
+}
+@media (max-width: 720px) {
+  .collection-hero {
+    grid-template-columns: 1fr !important;
+  }
+  .collection-hero > div:first-child {
+    min-height: 160px !important;
+  }
+}
+.cocktail-card-actions {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  pointer-events: none;
+}
+.cocktail-card:hover .cocktail-card-actions,
+.cocktail-card:focus-within .cocktail-card-actions,
+.cocktail-card-actions[data-open='true'] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Cocktail gallery nav arrows */
+.gallery-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(26, 25, 24, 0.45);
+  color: #fff;
+  border: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 160ms ease, transform 160ms ease;
+  z-index: 2;
+}
+.gallery-nav:hover {
+  background: rgba(26, 25, 24, 0.7);
+}
+
+/* Segmented control (used for sort + grid/list toggles in the library) */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-sunken);
+  border-radius: 9px;
+}
+.seg button {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms, color 120ms;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  line-height: 1;
+}
+.seg button:hover {
+  color: var(--ink-1);
+}
+.seg button[data-active='true'] {
+  background: #fff;
+  color: var(--ink-1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* ====================================================================
+   Mobile shell: burger toggle + collapsing sidebar drawer.
+   ==================================================================== */
+
+.mobile-nav-toggle {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--line-1);
+  background: #fff;
+  color: var(--ink-1);
+  box-shadow: var(--shadow-1);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.mobile-nav-toggle-bars {
+  position: relative;
+  width: 16px;
+  height: 12px;
+  display: block;
+}
+.mobile-nav-toggle-bars span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: currentColor;
+  border-radius: 2px;
+  transition:
+    transform 180ms ease,
+    opacity 140ms ease,
+    top 180ms ease;
+}
+.mobile-nav-toggle-bars span:nth-child(1) {
+  top: 0;
+}
+.mobile-nav-toggle-bars span:nth-child(2) {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.mobile-nav-toggle-bars span:nth-child(3) {
+  top: calc(100% - 1.5px);
+}
+.mobile-nav-toggle-bars.is-open span:nth-child(1) {
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+}
+.mobile-nav-toggle-bars.is-open span:nth-child(2) {
+  opacity: 0;
+}
+.mobile-nav-toggle-bars.is-open span:nth-child(3) {
+  top: 50%;
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.mobile-nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 20, 16, 0.38);
+  backdrop-filter: blur(3px);
+  border: 0;
+  padding: 0;
+  z-index: 55;
+  cursor: pointer;
+  animation: mobileNavFade 180ms ease both;
+}
+
+@keyframes mobileNavFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  /* Prevent runaway inner content (long names, wide tables) from pushing
+     the viewport wider than the screen on mobile. `clip` doesn't create
+     a scroll container, so sticky positioning still works. */
+  .main {
+    overflow-x: clip;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 276px;
+    max-width: 84vw;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    z-index: 60;
+    box-shadow: 0 24px 60px rgba(24, 20, 16, 0.18);
+  }
+
+  body[data-mobile-nav='open'] .sidebar {
+    transform: translateX(0);
+  }
+
+  .mobile-nav-toggle {
+    display: inline-flex;
+  }
+
+  .mobile-nav-backdrop {
+    display: block;
+  }
+
+  .topbar {
+    padding: 12px 18px;
+    gap: 10px;
+  }
+
+  .crumbs {
+    font-size: 12px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .search {
+    display: none;
+  }
+
+  .page {
+    padding: 20px 18px 64px;
+  }
+
+  .page-title {
+    font-size: 32px;
+  }
+
+  .top-actions .btn-primary span,
+  .top-actions .btn-primary {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    padding: 10px 14px;
+  }
+  .top-actions .btn-primary {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .page {
+    padding: 16px 14px 56px;
+  }
+  .page-title {
+    font-size: 26px;
+  }
+}
+
+/* ====================================================================
+   New-cocktail wizard — responsive layout.
+   ==================================================================== */
+
+.wizard-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 28px;
+}
+
+.wizard-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.wizard-steps-item {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.wizard-steps-item[data-last='true'] {
+  flex: 0 1 auto;
+}
+.wizard-steps-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  background: transparent;
+  border: 0;
+  min-width: 0;
+}
+.wizard-steps-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  flex: 0 0 auto;
+}
+.wizard-steps-label {
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.wizard-steps-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--line-1);
+  margin: 0 12px;
+}
+
+.wizard-trio {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.wizard-ing-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 116px 32px;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .wizard-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .wizard-form {
+    padding: 20px !important;
+  }
+  .wizard-preview,
+  .wizard-grid > .card:last-child {
+    position: static !important;
+    top: auto !important;
+  }
+  .wizard-steps {
+    gap: 4px;
+  }
+  .wizard-steps-rule {
+    margin: 0 6px;
+    min-width: 12px;
+  }
+  .wizard-steps-label {
+    display: none;
+  }
+  .wizard-trio {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .wizard-ing-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'name name'
+      'amount unit'
+      'remove remove';
+    row-gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    background: var(--bg-sunken);
+  }
+  .wizard-ing-row > :nth-child(1) {
+    grid-area: name;
+  }
+  .wizard-ing-row > :nth-child(2) {
+    grid-area: amount;
+  }
+  .wizard-ing-row > :nth-child(3) {
+    grid-area: unit;
+  }
+  .wizard-ing-row > :nth-child(4) {
+    grid-area: remove;
+    justify-self: end;
+    width: auto;
+    padding: 6px 12px;
+    gap: 6px;
+  }
+}
+
+/* ====================================================================
+   Dashboard grids — responsive collapse.
+   ==================================================================== */
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--density-gap);
+}
+
+.dash-featured {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--density-gap);
+}
+
+.dash-split {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--density-gap);
+  margin-top: 36px;
+}
+
+.dash-empty {
+  padding: 40px !important;
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+@media (max-width: 1100px) {
+  .dash-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-featured {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dash-stats {
+    grid-template-columns: 1fr;
+  }
+  .dash-featured {
+    grid-template-columns: 1fr;
+  }
+  .dash-empty {
+    grid-template-columns: 1fr;
+    padding: 24px !important;
+    gap: 18px;
+    text-align: center;
+  }
+  .dash-empty .row {
+    justify-content: center;
+  }
+}
+
+/* Dashboard hover affordances — make interactive cards feel clickable. */
+.dash-stats > .card {
+  transition:
+    transform 180ms ease,
+    box-shadow 200ms ease,
+    border-color 160ms ease;
+}
+.dash-stats > .card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+  border-color: rgba(196, 145, 85, 0.3);
+}
+
+.dash-featured > .card {
+  transition:
+    transform 200ms ease,
+    box-shadow 240ms ease,
+    border-color 180ms ease;
+  will-change: transform;
+}
+.dash-featured > .card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-3);
+  border-color: rgba(196, 145, 85, 0.35);
+}
+
+.dash-split a.row {
+  border-radius: 10px;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  margin-left: -8px;
+  margin-right: -8px;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+.dash-split a.row:hover {
+  background: var(--bg-sunken);
+  transform: translateX(2px);
+}
+
+.dash-contributors a.row {
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 180ms ease;
+}
+.dash-contributors a.row:hover {
+  background: #fff;
+  border-color: rgba(196, 145, 85, 0.35);
+  box-shadow: var(--shadow-1);
+  transform: translateY(-2px);
+}
+
+/* ====================================================================
+   Products page — responsive.
+   ==================================================================== */
+
+.products-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--density-gap);
+}
+
+.products-selector {
+  display: grid;
+  gap: var(--density-gap);
+}
+
+.products-hero {
+  display: grid;
+  grid-template-columns: 1fr 460px;
+  gap: 40px;
+  padding: 48px 48px 40px;
+  align-items: center;
+}
+
+.products-spec-strip {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  padding: 18px 32px;
+  border-top: 1px solid var(--line-1);
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 24px;
+}
+
+.products-split {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--density-gap);
+}
+
+@media (max-width: 1100px) {
+  .products-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .products-hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 32px 28px;
+  }
+  .products-hero > :last-child {
+    max-width: 280px;
+    justify-self: center;
+  }
+  .products-spec-strip {
+    grid-template-columns: repeat(3, 1fr);
+    padding: 18px 24px;
+    gap: 18px;
+  }
+  .products-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Selector strip becomes a horizontal scroller so bottles keep a legible size. */
+  .products-selector {
+    grid-template-columns: none !important;
+    grid-auto-flow: column;
+    grid-auto-columns: 140px;
+    overflow-x: auto;
+    overflow-y: clip;
+    scroll-snap-type: x proximity;
+    /* Leave room for the selected card's lift + shadow so the top doesn't get clipped. */
+    padding: 10px 2px 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .products-selector > button {
+    scroll-snap-align: start;
+    /* Disable the vertical lift on mobile — the horizontal scroller clips it. */
+    transform: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .products-stats {
+    grid-template-columns: 1fr;
+  }
+  .products-hero {
+    padding: 24px 18px;
+  }
+  .products-hero h2 {
+    font-size: 36px !important;
+  }
+  .products-spec-strip {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 16px 18px;
+    gap: 14px;
+  }
+}
+
+/* ====================================================================
+   Creator profile — hero layout responsive.
+   ==================================================================== */
+
+.creator-hero-row {
+  padding: 24px 40px 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 130px) minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: flex-start;
+}
+.creator-hero-stats {
+  border-top: 1px solid var(--line-1);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+  .creator-hero-row {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px 22px 22px;
+    gap: 14px;
+  }
+  .creator-hero-avatar {
+    margin-top: -70px !important;
+  }
+  .creator-hero-info h1 {
+    font-size: 32px !important;
+    line-height: 1.1 !important;
+  }
+  .creator-hero-actions {
+    order: 3;
+  }
+}
+
+@media (max-width: 480px) {
+  .creator-hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .creator-hero-stats > *:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line-1);
+  }
+}
+
+/* ====================================================================
+   Ingredients page — responsive layout.
+   ==================================================================== */
+
+.ingredients-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+/* Both grid items must be allowed to shrink below their intrinsic content
+   width, otherwise a long ingredient pill forces horizontal scroll. */
+.ingredients-layout > * {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .ingredients-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ingredients-browser {
+    padding: 18px !important;
+  }
+  /* Allow long ingredient names to wrap inside their pill instead of
+     forcing a horizontal overflow. */
+  .ingredient-pill {
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    text-align: left;
+  }
+}
+
+

@@ -1,0 +1,20 @@
+/* Product edit page — form grids that collapse gracefully */
+
+.pe-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pe-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.pe-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+@media (max-width: 1200px) {
+  .pe-grid { grid-template-columns: 1fr !important; }
+  .pe-grid > .col:last-child { position: static !important; }
+}
+@media (max-width: 720px) {
+  .pe-grid-2, .pe-grid-3, .pe-grid-4 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .pe-grid-2, .pe-grid-3, .pe-grid-4 { grid-template-columns: 1fr; }
+}
+
+.btn-primary:disabled, .btn-secondary:disabled, .btn-ghost:disabled {
+  opacity: 0.4; cursor: not-allowed; pointer-events: none;
+}

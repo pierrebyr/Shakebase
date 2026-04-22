@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ShakeBase — Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="src/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;450;500;600&family=Inter+Tight:wght@400;500;600&family=Instrument+Serif&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    .settings-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 40px;
+      max-width: 1080px;
+    }
+    @media (max-width: 900px) {
+      .settings-layout { grid-template-columns: 1fr; gap: 20px; }
+    }
+    .settings-nav {
+      position: sticky; top: 96px;
+      align-self: start;
+      display: flex; flex-direction: column;
+      gap: 2px;
+    }
+    .settings-nav .sec-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-4);
+      padding: 10px 12px 6px;
+    }
+    .s-nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--ink-2);
+      cursor: pointer;
+      transition: background 120ms, color 120ms;
+      text-align: left;
+    }
+    .s-nav-item:hover { background: var(--bg-sunken); color: var(--ink-1); }
+    .s-nav-item[data-active="true"] {
+      background: var(--ink-1);
+      color: #fff;
+    }
+    .s-nav-item[data-active="true"] .s-nav-ico { color: #fff; }
+    .s-nav-ico { color: var(--ink-4); width: 16px; height: 16px; flex-shrink: 0; }
+
+    .setting-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line-2);
+      align-items: start;
+    }
+    @media (max-width: 680px) {
+      .setting-row { grid-template-columns: 1fr; gap: 10px; }
+    }
+    .setting-row:last-child { border-bottom: 0; }
+    .setting-row .label {
+      font-weight: 500;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .setting-row .desc {
+      font-size: 12.5px;
+      color: var(--ink-3);
+      line-height: 1.5;
+      max-width: 44ch;
+    }
+    .setting-row .control {
+      display: flex; justify-content: flex-end;
+      align-items: center; gap: 10px;
+    }
+    @media (max-width: 680px) {
+      .setting-row .control { justify-content: flex-start; }
+    }
+
+    .input, .select {
+      padding: 9px 12px;
+      background: #fff;
+      border: 1px solid var(--line-1);
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--ink-1);
+      outline: none;
+      min-width: 220px;
+      transition: border-color 120ms, box-shadow 160ms;
+    }
+    .input:focus, .select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(196,145,85,0.15);
+    }
+
+    /* Toggle */
+    .toggle {
+      width: 42px; height: 24px;
+      border-radius: 999px;
+      background: var(--line-1);
+      position: relative;
+      cursor: pointer;
+      transition: background 180ms;
+    }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 20px; height: 20px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 180ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .toggle[data-on="true"] { background: #3a7f5a; }
+    .toggle[data-on="true"]::after { transform: translateX(18px); }
+
+    /* Segmented */
+    .seg {
+      display: inline-flex;
+      background: var(--bg-sunken);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .seg button {
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--ink-3);
+      cursor: pointer;
+      transition: background 120ms, color 120ms;
+      text-transform: capitalize;
+    }
+    .seg button[data-active="true"] {
+      background: #fff;
+      color: var(--ink-1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    /* Avatar large */
+    .avatar-xl {
+      width: 72px; height: 72px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #f5d9a9, #c49155);
+      color: #fff;
+      display: grid; place-items: center;
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-style: italic;
+      font-weight: 400;
+      box-shadow: var(--shadow-2);
+      flex-shrink: 0;
+    }
+
+    /* Session rows */
+    .session-row {
+      display: grid;
+      grid-template-columns: 36px 1fr auto;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line-2);
+      align-items: center;
+    }
+    .session-row:last-child { border-bottom: 0; }
+    .session-ico {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--bg-sunken);
+      display: grid; place-items: center;
+      color: var(--ink-3);
+    }
+    .session-row .sess-title {
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+    .session-row .sess-meta {
+      font-size: 11.5px;
+      color: var(--ink-4);
+      font-family: var(--font-mono);
+      letter-spacing: 0.02em;
+    }
+    .sess-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #e3f0e9;
+      color: var(--ok);
+    }
+
+    .danger-card {
+      border: 1px solid #f0cccc;
+      background: #fdf7f7;
+    }
+    .danger-card .panel-title { color: var(--crit); }
+
+    .btn-danger {
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--crit);
+      border: 1px solid #e6b3b3;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 120ms, border-color 120ms;
+    }
+    .btn-danger:hover { background: #fbefef; border-color: var(--crit); }
+
+    .save-bar {
+      position: sticky;
+      bottom: 16px;
+      margin-top: 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(22px) saturate(160%);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      border: 1px solid var(--line-1);
+      border-radius: 14px;
+      box-shadow: var(--shadow-3);
+      z-index: 10;
+    }
+    .save-bar .save-meta {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--ink-3);
+      letter-spacing: 0.02em;
+    }
+    .save-bar .save-meta strong { color: var(--ink-1); font-weight: 500; }
+
+    .integration-tile {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 14px;
+      padding: 16px;
+      align-items: center;
+      border-radius: 14px;
+      border: 1px solid var(--line-1);
+      background: #fff;
+      transition: box-shadow 160ms, transform 160ms;
+    }
+    .integration-tile:hover { box-shadow: var(--shadow-2); }
+    .int-logo {
+      width: 44px; height: 44px;
+      border-radius: 11px;
+      display: grid; place-items: center;
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 22px;
+      color: #fff;
+    }
+    .int-name { font-size: 13.5px; font-weight: 500; }
+    .int-meta { font-size: 11.5px; color: var(--ink-4); margin-top: 2px; }
+
+    .plan-card {
+      padding: 26px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #1a1918 0%, #3a3027 100%);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .plan-card::after {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(196,145,85,0.4), transparent 70%);
+      filter: blur(30px);
+    }
+    .plan-card .plan-tier {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+    }
+    .plan-card .plan-name {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 40px;
+      line-height: 1;
+      margin-top: 10px;
+      letter-spacing: -0.02em;
+    }
+    .plan-card .plan-meta {
+      margin-top: 16px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.5;
+      max-width: 42ch;
+    }
+    .plan-card .plan-meta strong { color: #fff; font-weight: 500; }
+
+    .usage-bar {
+      height: 5px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 14px;
+    }
+    .usage-bar i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #f5d9a9, #c49155);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body data-density="comfortable" data-type="technical">
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="src/icons.jsx"></script>
+  <script type="text/babel" src="src/components.jsx"></script>
+  <script type="text/babel" src="src/shell.jsx"></script>
+
+  <script type="text/babel">
+    const SECTIONS = [
+      { group: 'Account',      items: [
+        { id: 'profile',   label: 'Profile',         icon: 'user' },
+        { id: 'security',  label: 'Security',        icon: 'lock' },
+        { id: 'sessions',  label: 'Sessions',        icon: 'clock' },
+      ]},
+      { group: 'Workspace',    items: [
+        { id: 'general',   label: 'General',         icon: 'settings' },
+        { id: 'appearance',label: 'Appearance',      icon: 'sparkle' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell' },
+        { id: 'team',      label: 'Team & roles',    icon: 'users' },
+      ]},
+      { group: 'Data',         items: [
+        { id: 'integrations', label: 'Integrations', icon: 'plug' },
+        { id: 'billing',      label: 'Billing',      icon: 'card' },
+        { id: 'export',       label: 'Data & export',icon: 'download' },
+      ]},
+    ];
+
+    function Toggle({ on, onChange }) {
+      return (
+        <div className="toggle" data-on={on} onClick={() => onChange(!on)} role="switch" aria-checked={on} />
+      );
+    }
+
+    function Seg({ value, options, onChange }) {
+      return (
+        <div className="seg">
+          {options.map(o => (
+            <button key={o} data-active={value === o} onClick={() => onChange(o)}>{o}</button>
+          ))}
+        </div>
+      );
+    }
+
+    function Row({ label, desc, children }) {
+      return (
+        <div className="setting-row">
+          <div>
+            <div className="label">{label}</div>
+            {desc && <div className="desc">{desc}</div>}
+          </div>
+          <div className="control">{children}</div>
+        </div>
+      );
+    }
+
+    function Profile({ state, set }) {
+      return (
+        <>
+          <div className="card card-pad" style={{ padding: 28, marginBottom: 20 }}>
+            <div className="panel-title" style={{ marginBottom: 18 }}>Profile</div>
+            <div style={{ display: 'flex', gap: 20, alignItems: 'center', marginBottom: 4 }}>
+              <div className="avatar-xl">EM</div>
+              <div className="col" style={{ gap: 6 }}>
+                <div style={{ fontSize: 18, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Eli Marchant</div>
+                <div style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>eli.marchant@shakebase.co</div>
+                <div className="row gap-sm" style={{ marginTop: 4 }}>
+                  <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: 12 }}>Upload photo</button>
+                  <button className="btn-ghost" style={{ fontSize: 12 }}>Remove</button>
+                </div>
+              </div>
+            </div>
+            <div style={{ height: 24 }} />
+            <Row label="Full name" desc="Visible across the workspace on cocktails, comments, and signatures.">
+              <input className="input" value={state.name} onChange={e => set({ ...state, name: e.target.value })} />
+            </Row>
+            <Row label="Job title" desc="Shown on creator and contributor profiles.">
+              <input className="input" value={state.role} onChange={e => set({ ...state, role: e.target.value })} />
+            </Row>
+            <Row label="Home venue" desc="Default venue attribution for new cocktails you author.">
+              <select className="select" value={state.venue} onChange={e => set({ ...state, venue: e.target.value })}>
+                <option>ShakeBase Lab</option>
+                <option>Aurelia Bar</option>
+                <option>Kogane</option>
+                <option>The Vestry</option>
+                <option>Levanta</option>
+                <option>Petite Perle</option>
+                <option>Botica</option>
+              </select>
+            </Row>
+            <Row label="Language" desc="Interface language and default unit format.">
+              <select className="select" value={state.lang} onChange={e => set({ ...state, lang: e.target.value })}>
+                <option>English (US)</option>
+                <option>Français (FR)</option>
+                <option>Español (MX)</option>
+                <option>日本語</option>
+              </select>
+            </Row>
+            <Row label="Time zone" desc="Used on analytics windows and audit trails.">
+              <select className="select" value={state.tz} onChange={e => set({ ...state, tz: e.target.value })}>
+                <option>Europe/Paris (UTC+1)</option>
+                <option>America/New_York (UTC-5)</option>
+                <option>America/Mexico_City (UTC-6)</option>
+                <option>Asia/Tokyo (UTC+9)</option>
+              </select>
+            </Row>
+          </div>
+        </>
+      );
+    }
+
+    function Security({ state, set }) {
+      return (
+        <div className="card card-pad" style={{ padding: 28, marginBottom: 20 }}>
+          <div className="panel-title" style={{ marginBottom: 18 }}>Security</div>
+          <Row label="Password" desc="Last changed 3 months ago. Minimum 12 characters with a mix of letters, numbers, and symbols.">
+            <button className="btn-secondary" style={{ fontSize: 12.5 }}>Change password</button>
+          </Row>
+          <Row label="Two-factor authentication" desc="Protect your account with an authenticator app. Recommended for all R&D team members.">
+            <div className="row gap-sm">
+              <span className="pill ok">Enabled</span>
+              <Toggle on={state.twofa} onChange={v => set({ ...state, twofa: v })} />
+            </div>
+          </Row>
+          <Row label="Recovery codes" desc="Download a set of single-use codes in case you lose your device.">
+            <button className="btn-secondary" style={{ fontSize: 12.5 }}>Generate codes</button>
+          </Row>
+          <Row label="Single sign-on" desc="Sign in with your company Google or Apple SSO. Overrides password.">
+            <Seg value={state.sso} options={['Google', 'Apple', 'Off']} onChange={v => set({ ...state, sso: v })} />
+          </Row>
+          <Row label="Email on new sign-ins" desc="Get notified when your account signs in from a new device or location.">
+            <Toggle on={state.signinAlerts} onChange={v => set({ ...state, signinAlerts: v })} />
+          </Row>
+        </div>
+      );
+    }
+
+    function Sessions() {
+      const rows = [
+        { device: 'MacBook Pro 14"', loc: 'Paris, FR · Chrome 131',   when: 'Active now',         cur: true },
+        { device: 'iPhone 16 Pro',   loc: 'Paris, FR · Safari 17',    when: '2 hours ago',        cur: false },
+        { device: 'iPad Air',        loc: 'Lisbon, PT · Safari 17',   when: 'Yesterday, 18:42',   cur: false },
+        { device: 'Windows workstation', loc: 'Brooklyn, US · Firefox 122', when: '3 days ago',  cur: false },
+      ];
+      return (
+        <div className="card card-pad" style={{ padding: 28, marginBottom: 20 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <div>
+              <div className="panel-title">Active sessions</div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 6, maxWidth: 42 + 'ch' }}>Devices currently signed in to ShakeBase with your credentials.</div>
+            </div>
+            <button className="btn-secondary" style={{ fontSize: 12 }}>Sign out all</button>
+          </div>
+          <div style={{ marginTop: 14 }}>
+            {rows.map((r, i) => (
+              <div key={i} className="session-row">
+                <div className="session-ico">
+                  <Icon name={r.device.toLowerCase().includes('iphone') || r.device.toLowerCase().includes('ipad') ? 'phone' : 'monitor'} size={16} />
+                </div>
+                <div>
+                  <div className="sess-title">{r.device} {r.cur && <span className="sess-badge" style={{ marginLeft: 8 }}>This device</span>}</div>
+                  <div className="sess-meta">{r.loc} · {r.when}</div>
+                </div>
+                {!r.cur && <button className="btn-ghost" style={{ fontSize: 12 }}>Revoke</button>}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function General({ state, set }) {
+      return (
+        <div className="card card-pad" style={{ padding: 28, marginBottom: 20 }}>
+          <div className="panel-title" style={{ marginBottom: 18 }}>Workspace</div>
+          <Row label="Workspace name" desc="Shown in navigation and on shared exports.">
+            <input className="input" value={state.workspace} onChange={e => set({ ...state, workspace: e.target.value })} />
+          </Row>
+          <Row label="Default unit system" desc="Applied to new recipes. Existing cocktails keep their original units.">
+            <Seg value={state.units} options={['metric', 'imperial', 'both']} onChange={v => set({ ...state, units: v })} />
+          </Row>
+          <Row label="Auto-save drafts" desc="Save cocktail drafts every 8 seconds while editing.">
+            <Toggle on={state.autosave} onChange={v => set({ ...state, autosave: v })} />
+          </Row>
+          <Row label="Show cost &amp; margin" desc="Display per-serve cost, menu price, and gross margin across the library.">
+            <Toggle on={state.costs} onChange={v => set({ ...state, costs: v })} />
+          </Row>
+          <Row label="Default library view" desc="Grid showcases visual identity; list is denser and sortable.">
+            <Seg value={state.view} options={['grid', 'list']} onChange={v => set({ ...state, view: v })} />
+          </Row>
+        </div>
+      );
+    }
+
+    function Appearance({ state, set }) {
+      return (
+        <div className="card card-pad" style={{ padding: 28, marginBottom: 20 }}>
+          <div className="panel-title" style={{ marginBottom: 18 }}>Appearance</div>
+          <Row label="Theme" desc="Light is optimised for the production floor. System follows your OS.">
+            <div className="seg">
+              {['light', 'dark', 'system'].map(t => (
+                <button key={t} data-active={state.theme === t} onClick={() => set({ ...state, theme: t })}>{t}</button>
+              ))}
+            </div>
+          </Row>
+          <Row label="Accent colour" desc="Tints buttons, highlights, and the active navigation state.">
+            <div className="row gap-sm">
+              {[['#c49155','Amber'],['#5a7d62','Agave'],['#8c5a7f','Hibiscus'],['#2f5e7a','Lagoon']].map(([hex, n]) => (
+                <button key={hex} title={n} onClick={() => set({ ...state, accent: hex })}
+                  style={{
+                    width: 26, height: 26, borderRadius: 999,
+                    background: hex,
+                    border: state.accent === hex ? '2px solid var(--ink-1)' : '2px solid transparent',
+                    boxShadow: '0 0 0 2px #fff inset, 0 1px 3px rgba(0,0,0,0.1)',
+                    cursor: 'pointer',
+                  }} />
+              ))}
+            </div>
+          </Row>
+          <Row label="Density" desc="Compact fits more cocktails on screen; Comfortable keeps breathing room.">
+            <Seg value={state.density} options={['comfortable', 'compact']} onChange={v => set({ ...state, density: v })} />
+          </Row>
+          <Row label="Typography" desc="Technical uses a mono pairing suited to specifications and numbers.">
+            <Seg value={state.typo} options={['default', 'editorial', 'technical']} onChange={v => set({ ...state, typo: v })} />
+          </Row>
+          <Row label="Reduce motion" desc="Disables page transitions and hover animations.">
+            <Toggle on={state.reduceMotion} onChange={v => set({ ...state, reduceMotion: v })} />
+          </Row>
+        </div>
+      );
+    }
+
+    function Notifications({ state, set }) {
+      const toggle = (k) => set({ ...state, [k]: !state[k] });
+      return (
+        <div className="card card-pad" style={{ padding: 28, marginBottom: 20 }}>
+          <div className="panel-title" style={{ marginBottom: 18 }}>Notifications</div>
+          <Row label="New cocktail submissions" desc="R&D review queue — cocktails awaiting approval into the library."><Toggle on={state.submissions} onChange={() => toggle('submissions')} /></Row>
+          <Row label="Comments &amp; mentions" desc="When a teammate @mentions you on a cocktail or leaves a comment."><Toggle on={state.mentions} onChange={() => toggle('mentions')} /></Row>
+          <Row label="Weekly digest" desc="Friday summary — top pours, new additions, stock alerts."><Toggle on={state.digest} onChange={() => toggle('digest')} /></Row>
+          <Row label="Stock &amp; par alerts" desc="When a Casa Dragones bottle drops below par in any venue."><Toggle on={state.stock} onChange={() => toggle('stock')} /></Row>
+          <Row label="Delivery channel" desc="Where to send the notifications above.">
+            <Seg value={state.channel} options={['email', 'in-app', 'both']} onChange={v => set({ ...state, channel: v })} />
+          </Row>
+        </div>
+      );
+    }
+
+    function Team() {
+      const members = [
+        { n: 'Eli Marchant',    r: 'Owner · Brand Marketing',   c: '#c49155', you: true },
+        { n: 'Halsey Brenner',  r: 'Admin · R&D',               c: '#5a7d62' },
+        { n: 'Mirela Sato',     r: 'Editor · Mixologist',        c: '#8c5a7f' },
+        { n: 'Noa Cassar',      r: 'Editor · Beverage Dir.',    c: '#2f5e7a' },
+        { n: 'Rafael Quiroga',  r: 'Viewer · Guest Creator',    c: '#a74a3a' },
+      ];
+      return (
+        <div className="card card-pad" style={{ padding: 28, marginBottom: 20 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+            <div>
+              <div className="panel-title">Team &amp; roles</div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 6, maxWidth: '42ch' }}>Manage who has access to the ShakeBase workspace and what they can edit.</div>
+            </div>
+            <button className="btn-primary"><Icon name="plus" size={13} />Invite teammate</button>
+          </div>
+          {members.map((m, i) => (
+            <div key={i} className="session-row">
+              <div className="session-ico" style={{ background: m.c, color: '#fff', fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>{m.n.split(' ').map(x => x[0]).join('')}</div>
+              <div>
+                <div className="sess-title">{m.n} {m.you && <span className="sess-badge" style={{ background: 'var(--accent-wash)', color: 'var(--accent-ink)', marginLeft: 8 }}>You</span>}</div>
+                <div className="sess-meta">{m.r}</div>
+              </div>
+              <select className="select" style={{ minWidth: 110, padding: '7px 10px', fontSize: 12 }} defaultValue={m.r.split(' · ')[0]}>
+                <option>Owner</option><option>Admin</option><option>Editor</option><option>Viewer</option>
+              </select>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function Integrations() {
+      const ints = [
+        { k: 'Slack',     desc: 'Post submissions and alerts to #bar-team', col: '#4A154B', letter: 'S', on: true },
+        { k: 'Toast POS', desc: 'Auto-sync menu price and pour counts',     col: '#ff4e2b', letter: 'T', on: true },
+        { k: 'Figma',     desc: 'Export visual identity swatches to library',col: '#000',   letter: 'F', on: false },
+        { k: 'Dropbox',   desc: 'Attach reference photos and training docs',col: '#0061ff', letter: 'D', on: false },
+        { k: 'Google Drive', desc: 'Back up recipe sheets weekly',          col: '#3a7f5a', letter: 'G', on: true },
+        { k: 'Webhooks',  desc: 'Custom notifications and ERP bridges',     col: '#1a1918', letter: '⁂', on: false },
+      ];
+      return (
+        <div className="card card-pad" style={{ padding: 28, marginBottom: 20 }}>
+          <div className="panel-title" style={{ marginBottom: 4 }}>Integrations</div>
+          <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginBottom: 20, maxWidth: '48ch' }}>Connect ShakeBase to the tools your team uses every day. Disconnect any time.</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+            {ints.map(i => (
+              <div key={i.k} className="integration-tile">
+                <div className="int-logo" style={{ background: i.col }}>{i.letter}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div className="int-name">{i.k}</div>
+                  <div className="int-meta">{i.desc}</div>
+                </div>
+                {i.on ? (
+                  <span className="pill ok">Connected</span>
+                ) : (
+                  <button className="btn-secondary" style={{ fontSize: 12 }}>Connect</button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function Billing() {
+      return (
+        <div className="col" style={{ gap: 20 }}>
+          <div className="plan-card">
+            <div className="plan-tier">Current plan</div>
+            <div className="plan-name">Studio</div>
+            <div className="plan-meta">Unlimited cocktails, 25 team seats, all venues, POS sync, and priority R&amp;D support. <strong>Next renewal on 12 May 2026.</strong></div>
+            <div style={{ marginTop: 22, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Seats used</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 26, marginTop: 4 }}>8 <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>/ 25</span></div>
+              </div>
+              <button className="btn-secondary" style={{ background: '#fff', color: 'var(--ink-1)' }}>Manage plan</button>
+            </div>
+            <div className="usage-bar"><i style={{ width: '32%' }} /></div>
+          </div>
+
+          <div className="card card-pad" style={{ padding: 28 }}>
+            <div className="panel-title" style={{ marginBottom: 18 }}>Payment method</div>
+            <Row label="Card on file" desc="We charge on the 12th of each month in EUR.">
+              <div className="row gap-sm">
+                <div style={{ padding: '7px 12px', border: '1px solid var(--line-1)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 12 }}>•••• •••• •••• 4821</div>
+                <button className="btn-ghost" style={{ fontSize: 12 }}>Update</button>
+              </div>
+            </Row>
+            <Row label="Billing email" desc="Invoices and receipts are sent here.">
+              <input className="input" defaultValue="finance@casadragones.com" />
+            </Row>
+            <Row label="Tax ID" desc="Appears on invoices. Used for EU VAT reverse-charge.">
+              <input className="input" defaultValue="FR 76 923 812 501" />
+            </Row>
+          </div>
+
+          <div className="card card-pad" style={{ padding: 28 }}>
+            <div className="panel-title" style={{ marginBottom: 12 }}>Recent invoices</div>
+            {[
+              ['INV-4128', '12 Apr 2026', '€480.00', 'Paid'],
+              ['INV-4081', '12 Mar 2026', '€480.00', 'Paid'],
+              ['INV-4034', '12 Feb 2026', '€420.00', 'Paid'],
+              ['INV-3991', '12 Jan 2026', '€420.00', 'Paid'],
+            ].map(([id, date, amt, s]) => (
+              <div key={id} className="session-row">
+                <div className="session-ico"><Icon name="file" size={15} /></div>
+                <div>
+                  <div className="sess-title">{id}</div>
+                  <div className="sess-meta">{date}</div>
+                </div>
+                <div className="row gap-sm">
+                  <span className="mono" style={{ fontSize: 12 }}>{amt}</span>
+                  <span className="pill ok">{s}</span>
+                  <button className="btn-ghost" style={{ fontSize: 12 }}>PDF</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function DataExport() {
+      return (
+        <div className="col" style={{ gap: 20 }}>
+          <div className="card card-pad" style={{ padding: 28 }}>
+            <div className="panel-title" style={{ marginBottom: 18 }}>Data &amp; export</div>
+            <Row label="Export full library" desc="All 24 cocktails with ingredients, methods, photos, and metadata.">
+              <div className="row gap-sm">
+                <button className="btn-secondary" style={{ fontSize: 12 }}>CSV</button>
+                <button className="btn-secondary" style={{ fontSize: 12 }}>JSON</button>
+                <button className="btn-secondary" style={{ fontSize: 12 }}>PDF book</button>
+              </div>
+            </Row>
+            <Row label="Export creators" desc="Names, bios, contributions, and current venue.">
+              <button className="btn-secondary" style={{ fontSize: 12 }}>Download CSV</button>
+            </Row>
+            <Row label="Activity audit log" desc="Every edit and sign-in over the last 180 days.">
+              <button className="btn-secondary" style={{ fontSize: 12 }}>Download</button>
+            </Row>
+            <Row label="Backups" desc="Nightly snapshots stored in encrypted cold storage. 90-day retention.">
+              <span className="pill ok">Enabled</span>
+            </Row>
+          </div>
+
+          <div className="card card-pad danger-card" style={{ padding: 28 }}>
+            <div className="panel-title" style={{ marginBottom: 18 }}>Danger zone</div>
+            <Row label="Transfer ownership" desc="Hand the workspace over to another Admin. You will become an Editor.">
+              <button className="btn-danger">Transfer workspace</button>
+            </Row>
+            <Row label="Archive workspace" desc="Make the workspace read-only. Nothing is deleted.">
+              <button className="btn-danger">Archive</button>
+            </Row>
+            <Row label="Delete account" desc="Permanently remove your account and authored drafts. Cannot be undone.">
+              <button className="btn-danger">Delete account</button>
+            </Row>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [section, setSection] = React.useState(() => localStorage.getItem('sb_settings_sec') || 'profile');
+      React.useEffect(() => { localStorage.setItem('sb_settings_sec', section); }, [section]);
+
+      const [profile, setProfile] = React.useState({
+        name: 'Eli Marchant',
+        role: 'Brand Marketing · Casa Dragones',
+        venue: 'ShakeBase Lab',
+        lang: 'English (US)',
+        tz: 'Europe/Paris (UTC+1)',
+      });
+      const [security, setSecurity] = React.useState({ twofa: true, sso: 'Google', signinAlerts: true });
+      const [general, setGeneral] = React.useState({ workspace: 'Casa Dragones · ShakeBase', units: 'metric', autosave: true, costs: true, view: 'grid' });
+      const [appearance, setAppearance] = React.useState({ theme: 'light', accent: '#c49155', density: 'comfortable', typo: 'technical', reduceMotion: false });
+      const [notif, setNotif] = React.useState({ submissions: true, mentions: true, digest: true, stock: true, channel: 'in-app' });
+
+      const activeLabel = SECTIONS.flatMap(s => s.items).find(i => i.id === section)?.label || 'Settings';
+
+      const [route, setRoute] = React.useState({ page: 'settings' });
+      const [mobileOpen, setMobileOpen] = React.useState(false);
+      const [search, setSearch] = React.useState('');
+
+      return (
+        <div className="app">
+          {typeof Sidebar !== 'undefined' && (
+            <Sidebar route={route} setRoute={(r) => { window.location.href = r.page === 'dashboard' ? 'Cocktail Dashboard.html' : 'Cocktail Dashboard.html'; }} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+          )}
+          <div className="main">
+            {typeof Topbar !== 'undefined' && (
+              <Topbar crumbs={['ShakeBase', 'Settings', activeLabel]} search={search} setSearch={setSearch} onBurger={() => setMobileOpen(true)} mobileOpen={mobileOpen} setRoute={() => { window.location.href = 'Cocktail Dashboard.html'; }} />
+            )}
+            <div className="page fade-up">
+              <div className="page-head">
+                <div className="page-kicker">Account &amp; workspace</div>
+                <h1 className="page-title">Settings.</h1>
+                <p className="page-sub">Manage your profile, how ShakeBase looks, and who can do what across the Casa Dragones workspace.</p>
+              </div>
+
+              <div className="settings-layout">
+                <nav className="settings-nav">
+                  {SECTIONS.map(g => (
+                    <React.Fragment key={g.group}>
+                      <div className="sec-label">{g.group}</div>
+                      {g.items.map(it => (
+                        <button key={it.id} className="s-nav-item" data-active={section === it.id} onClick={() => setSection(it.id)}>
+                          <Icon name={it.icon} className="s-nav-ico" />
+                          <span>{it.label}</span>
+                        </button>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </nav>
+
+                <div>
+                  {section === 'profile'    && <Profile    state={profile}    set={setProfile} />}
+                  {section === 'security'   && <Security   state={security}   set={setSecurity} />}
+                  {section === 'sessions'   && <Sessions />}
+                  {section === 'general'    && <General    state={general}    set={setGeneral} />}
+                  {section === 'appearance' && <Appearance state={appearance} set={setAppearance} />}
+                  {section === 'notifications' && <Notifications state={notif} set={setNotif} />}
+                  {section === 'team'       && <Team />}
+                  {section === 'integrations' && <Integrations />}
+                  {section === 'billing'    && <Billing />}
+                  {section === 'export'     && <DataExport />}
+
+                  <div className="save-bar">
+                    <div className="save-meta"><strong>Draft saved</strong> · a moment ago</div>
+                    <div className="row gap-sm">
+                      <button className="btn-ghost">Discard</button>
+                      <button className="btn-primary"><Icon name="check" size={13} />Save changes</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
