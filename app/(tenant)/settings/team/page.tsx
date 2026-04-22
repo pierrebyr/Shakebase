@@ -117,30 +117,58 @@ function ActiveDot({ when }: { when: string }) {
 }
 
 export default async function TeamSettingsPage() {
+  try {
+    return await renderTeamPage()
+  } catch (err) {
+    // Re-throw unless it's a Next.js internal redirect — this way the actual
+    // error message lands in Vercel logs with a [team] tag so we can finally
+    // see what's breaking in prod.
+    if (
+      err instanceof Error &&
+      'digest' in err &&
+      typeof (err as { digest?: string }).digest === 'string' &&
+      (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+    ) {
+      throw err
+    }
+    console.error('[team] render failed', err)
+    throw err
+  }
+}
+
+async function renderTeamPage() {
   const workspace = await getCurrentWorkspace()
   const user = await requireUser()
 
   const admin = createAdminClient()
 
   // Owner-gate
-  const { data: me } = await admin
-    .from('memberships')
-    .select('role')
-    .eq('workspace_id', workspace.id)
-    .eq('user_id', user.id)
-    .not('joined_at', 'is', null)
-    .maybeSingle()
+  const { data: me } = await withTimeout(
+    admin
+      .from('memberships')
+      .select('role')
+      .eq('workspace_id', workspace.id)
+      .eq('user_id', user.id)
+      .not('joined_at', 'is', null)
+      .maybeSingle(),
+    3000,
+    'owner-gate',
+  )
   if (!me || (me as { role: string }).role !== 'owner') {
     redirect('/settings')
   }
 
-  const { data: memsData } = await admin
-    .from('memberships')
-    .select(
-      'id, user_id, role, invitation_email, invitation_token, invitation_expires_at, joined_at, invited_by, created_at',
-    )
-    .eq('workspace_id', workspace.id)
-    .order('joined_at', { ascending: false, nullsFirst: false })
+  const { data: memsData } = await withTimeout(
+    admin
+      .from('memberships')
+      .select(
+        'id, user_id, role, invitation_email, invitation_token, invitation_expires_at, joined_at, invited_by, created_at',
+      )
+      .eq('workspace_id', workspace.id)
+      .order('joined_at', { ascending: false, nullsFirst: false }),
+    4000,
+    'memberships',
+  )
   const memberships = (memsData ?? []) as unknown as MembershipRow[]
   const active = memberships.filter((m) => m.user_id != null && m.joined_at != null)
   const pending = memberships.filter((m) => m.user_id == null && m.invitation_token)
