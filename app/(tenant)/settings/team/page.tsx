@@ -15,6 +15,7 @@ import {
 } from './actions'
 import { InviteModalTrigger } from './InviteModal'
 import { DangerZone } from './DangerZone'
+import { RoleSelect } from './RoleSelect'
 import { relTime } from '@/lib/datetime'
 import { ROLES, type Role } from '@/lib/constants'
 
@@ -133,41 +134,13 @@ export default async function TeamSettingsPage() {
     ) {
       throw err
     }
-    // TEMPORARY DEBUG: render the real error message so we can see it in the
-    // browser instead of the scrubbed "digest only" prod boundary. Revert
-    // after we know what's breaking.
-    const message = err instanceof Error ? err.message : String(err)
-    const stack = err instanceof Error ? err.stack : undefined
-    console.error('[team] render failed', { message, stack, digest })
-    return (
-      <div className="page" style={{ maxWidth: 720 }}>
-        <div className="page-head">
-          <div className="page-kicker" style={{ color: 'var(--crit)' }}>
-            Debug · team page error
-          </div>
-          <h1 className="page-title">Render failed.</h1>
-        </div>
-        <pre
-          style={{
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            fontSize: 12,
-            fontFamily: 'var(--font-mono)',
-            padding: 18,
-            background: 'var(--bg-sunken)',
-            border: '1px solid var(--line-1)',
-            borderRadius: 10,
-            color: 'var(--ink-1)',
-          }}
-        >
-          <strong>Message:</strong> {message}
-          {'\n\n'}
-          <strong>Stack:</strong>
-          {'\n'}
-          {stack ?? '(no stack)'}
-        </pre>
-      </div>
-    )
+    console.error('[team] render failed', {
+      name: err instanceof Error ? err.name : typeof err,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      digest,
+    })
+    throw err
   }
 }
 
@@ -385,84 +358,6 @@ async function renderTeamPage() {
     if (!userId) return '—'
     const p = profiles.get(userId)
     return relTime(p?.last_sign_in_at ?? null)
-  }
-
-  // Data is all assembled — log so we know if a 500 past this point is
-  // a JSX render issue rather than a data-fetch issue.
-  console.log('[team] render start', {
-    workspace: workspace.slug,
-    activeCount: active.length,
-    pendingCount: pending.length,
-    profilesCount: profiles.size,
-    logsCount: logs.length,
-    transferableCount: transferableMembers.length,
-  })
-
-  // TEMPORARY DEBUG: render just the raw data, no child components. If this
-  // renders successfully, the 500 is in one of the child components
-  // (InviteModalTrigger, DangerZone, StatCard, Avatar, etc.). If it still
-  // fails, the bug is higher up (layout, fonts, CSS).
-  const DEBUG_TEAM_PAGE = true
-  if (DEBUG_TEAM_PAGE) {
-    return (
-      <div className="page" style={{ maxWidth: 960 }}>
-        <div className="page-head">
-          <div className="page-kicker" style={{ color: 'var(--crit)' }}>
-            Debug · team page data dump
-          </div>
-          <h1 className="page-title">Team data.</h1>
-          <p className="page-sub">
-            If you see this page, data assembly succeeded. The 500 was in a
-            child component&apos;s render.
-          </p>
-        </div>
-        <pre
-          style={{
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            fontSize: 12,
-            fontFamily: 'var(--font-mono)',
-            padding: 18,
-            background: 'var(--bg-sunken)',
-            border: '1px solid var(--line-1)',
-            borderRadius: 10,
-            color: 'var(--ink-1)',
-          }}
-        >
-          {JSON.stringify(
-            {
-              workspace: {
-                id: workspace.id,
-                slug: workspace.slug,
-                name: workspace.name,
-                subscription_status: workspace.subscription_status,
-              },
-              user: { id: user.id, email: user.email },
-              me,
-              active: active.map((m) => ({
-                id: m.id,
-                user_id: m.user_id,
-                role: m.role,
-                profile: profiles.get(m.user_id!) ?? null,
-              })),
-              pending: pending.map((p) => ({
-                id: p.id,
-                email: p.invitation_email,
-                role: p.role,
-                invited_by: p.invited_by,
-              })),
-              inviterNames: Object.fromEntries(inviterNames),
-              logs: logs.map((l) => ({ id: l.id, action: l.action, metadata: l.metadata })),
-              actorNames: Object.fromEntries(actorNames),
-              counts,
-              transferableMembers,
-            },
-            null,
-            2,
-          )}
-        </pre>
-      </div>
-    )
   }
 
   return (
@@ -870,11 +765,13 @@ async function renderTeamPage() {
                       </span>
                     ) : (
                       <form action={changeRoleAction}>
-                        <input type="hidden" name="membership_id" value={m.id} />
-                        <select
-                          name="role"
-                          defaultValue={m.role}
-                          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                        <RoleSelect
+                          membershipId={m.id}
+                          role={m.role}
+                          options={ROLES.filter((r) => r !== 'owner').map((r) => ({
+                            value: r,
+                            label: ROLE_META[r].label,
+                          }))}
                           style={{
                             ...rolePillStyle(m.role),
                             fontFamily: 'var(--font-ui)',
@@ -886,13 +783,7 @@ async function renderTeamPage() {
                             cursor: 'pointer',
                             textTransform: 'capitalize',
                           }}
-                        >
-                          {ROLES.filter((r) => r !== 'owner').map((r) => (
-                            <option key={r} value={r}>
-                              {ROLE_META[r].label}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </form>
                     )}
                   </div>
