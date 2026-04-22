@@ -133,16 +133,41 @@ export default async function TeamSettingsPage() {
     ) {
       throw err
     }
-    // Log everything we have so the real cause surfaces in Vercel function
-    // logs. In production Next.js hides error.message from the client — the
-    // only way to see it is via the server log.
-    console.error('[team] render failed', {
-      name: err instanceof Error ? err.name : typeof err,
-      message: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined,
-      digest,
-    })
-    throw err
+    // TEMPORARY DEBUG: render the real error message so we can see it in the
+    // browser instead of the scrubbed "digest only" prod boundary. Revert
+    // after we know what's breaking.
+    const message = err instanceof Error ? err.message : String(err)
+    const stack = err instanceof Error ? err.stack : undefined
+    console.error('[team] render failed', { message, stack, digest })
+    return (
+      <div className="page" style={{ maxWidth: 720 }}>
+        <div className="page-head">
+          <div className="page-kicker" style={{ color: 'var(--crit)' }}>
+            Debug · team page error
+          </div>
+          <h1 className="page-title">Render failed.</h1>
+        </div>
+        <pre
+          style={{
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            fontSize: 12,
+            fontFamily: 'var(--font-mono)',
+            padding: 18,
+            background: 'var(--bg-sunken)',
+            border: '1px solid var(--line-1)',
+            borderRadius: 10,
+            color: 'var(--ink-1)',
+          }}
+        >
+          <strong>Message:</strong> {message}
+          {'\n\n'}
+          <strong>Stack:</strong>
+          {'\n'}
+          {stack ?? '(no stack)'}
+        </pre>
+      </div>
+    )
   }
 }
 
