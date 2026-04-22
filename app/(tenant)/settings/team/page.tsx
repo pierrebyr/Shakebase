@@ -362,6 +362,17 @@ async function renderTeamPage() {
     return relTime(p?.last_sign_in_at ?? null)
   }
 
+  // Data is all assembled — log so we know if a 500 past this point is
+  // a JSX render issue rather than a data-fetch issue.
+  console.log('[team] render start', {
+    workspace: workspace.slug,
+    activeCount: active.length,
+    pendingCount: pending.length,
+    profilesCount: profiles.size,
+    logsCount: logs.length,
+    transferableCount: transferableMembers.length,
+  })
+
   return (
     <>
       <div className="page-head">
