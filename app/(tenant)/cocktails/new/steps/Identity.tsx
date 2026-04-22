@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import { Icon } from '@/components/icons'
 import { CATEGORIES, GLASS_TYPES, SPIRIT_BASES } from '@/lib/cocktail/categories'
+import { compressImageFile } from '@/lib/image/compress'
 import type { BaseProductOption, CreatorOption, Draft } from '../types'
 
 // Darken a hex colour by mixing with #000 at the given ratio (0..1).
@@ -48,18 +49,19 @@ export function StepIdentity({
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be under 5 MB.')
+    if (file.size > 15 * 1024 * 1024) {
+      alert('Image must be under 15 MB.')
       return
     }
-    const reader = new FileReader()
-    reader.onload = () => {
+    try {
+      const { dataUrl } = await compressImageFile(file, { maxEdge: 1600, quality: 0.82 })
       update({
-        photo_data_url: typeof reader.result === 'string' ? reader.result : null,
+        photo_data_url: dataUrl,
         photo_filename: file.name,
       })
+    } catch {
+      alert('Could not read that image.')
     }
-    reader.readAsDataURL(file)
   }
 
   function onBaseChange(value: string) {

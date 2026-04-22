@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { Icon } from '@/components/icons'
+import { compressImageFile } from '@/lib/image/compress'
 
 type Props = {
   currentUrl: string | null
@@ -18,7 +19,7 @@ export function ImageUploader({
   currentUrl,
   alt,
   aspectRatio = '1 / 1',
-  maxMb = 5,
+  maxMb = 15,
   onUpload,
   onRemove,
   placeholder,
@@ -32,17 +33,22 @@ export function ImageUploader({
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
+    // Source-file sanity check — we compress in-browser but refuse genuinely
+    // huge files (40 MB+) so a bad phone photo can't OOM on low-end devices.
     if (file.size > maxMb * 1024 * 1024) {
       setError(`Image must be under ${maxMb} MB.`)
       return
     }
     setError(null)
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
-      reader.onerror = () => reject(reader.error ?? new Error('Read failed'))
-      reader.readAsDataURL(file)
-    })
+
+    let dataUrl: string
+    try {
+      const compressed = await compressImageFile(file, { maxEdge: 1600, quality: 0.82 })
+      dataUrl = compressed.dataUrl
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not read image')
+      return
+    }
 
     // Optimistic preview
     setPreviewUrl(dataUrl)

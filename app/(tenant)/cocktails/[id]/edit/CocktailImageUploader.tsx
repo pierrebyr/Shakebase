@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@/components/icons'
 import { ImageUploader } from '@/components/ImageUploader'
+import { compressImageFile } from '@/lib/image/compress'
 import {
   updateCocktailImageAction,
   addCocktailImageAction,
@@ -11,15 +12,7 @@ import {
 } from './image-actions'
 
 const MAX_IMAGES = 6
-
-function readFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result ?? ''))
-    reader.onerror = () => reject(new Error('Could not read file'))
-    reader.readAsDataURL(file)
-  })
-}
+const MAX_SOURCE_MB = 15
 
 export function CocktailImageUploader({
   cocktailId,
@@ -47,8 +40,12 @@ export function CocktailImageUploader({
           setError(`Max ${MAX_IMAGES} photos per cocktail.`)
           break
         }
-        const dataUrl = await readFile(file)
-        const res = await addCocktailImageAction({ cocktailId, dataUrl })
+        if (file.size > MAX_SOURCE_MB * 1024 * 1024) {
+          setError(`${file.name} is over ${MAX_SOURCE_MB} MB — skipped.`)
+          continue
+        }
+        const compressed = await compressImageFile(file, { maxEdge: 1600, quality: 0.82 })
+        const res = await addCocktailImageAction({ cocktailId, dataUrl: compressed.dataUrl })
         if (!res.ok) {
           setError(res.error)
           break
