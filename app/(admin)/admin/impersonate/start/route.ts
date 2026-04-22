@@ -65,6 +65,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(target, { status: 303 })
   }
 
+  // Edge case: the admin IS the workspace owner. There's nothing to
+  // impersonate — going through the sign-out + magic-link dance would sign
+  // them in as themselves and set a banner showing "pierre impersonating
+  // pierre". Skip all of that and just open the workspace directly.
+  if (admin.id === ownerUser.id) {
+    return NextResponse.redirect(workspaceUrl(ws.slug, '/dashboard'), { status: 303 })
+  }
+
   // Write audit event FIRST — if the session swap fails, we still have a record.
   await logAudit({
     actorKind: 'admin',

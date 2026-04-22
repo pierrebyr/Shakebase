@@ -18,6 +18,13 @@ export async function ImpersonationBanner() {
     return null
   }
 
+  // If the cookie got set with admin == owner (legacy session from before we
+  // short-circuited self-impersonation in start/route.ts), don't render the
+  // banner — the user is genuinely just themselves.
+  if (m.admin_email && m.owner_email && m.admin_email === m.owner_email) {
+    return null
+  }
+
   return (
     <div
       style={{
