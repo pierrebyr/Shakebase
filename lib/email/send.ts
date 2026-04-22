@@ -22,10 +22,19 @@ export type EmailOptions = {
   from?: string
 }
 
+// If the configured from is just a bare email (no display name wrapped in
+// `Name <email>` form), wrap it with the brand name so Gmail doesn't show
+// only the local part (e.g. "hello" instead of "ShakeBase").
+function ensureDisplayName(from: string): string {
+  if (from.includes('<') && from.includes('>')) return from
+  return `ShakeBase <${from.trim()}>`
+}
+
 // Sends via Resend when configured; otherwise prints a boxed log so dev
 // testing still surfaces the invite link without needing an email account.
 export async function sendEmail(opts: EmailOptions): Promise<{ ok: true; provider: 'resend' | 'console' }> {
-  const from = opts.from ?? process.env.RESEND_FROM_EMAIL ?? 'ShakeBase <hello@shakebase.co>'
+  const rawFrom = opts.from ?? process.env.RESEND_FROM_EMAIL ?? 'ShakeBase <hello@shakebase.co>'
+  const from = ensureDisplayName(rawFrom)
   const resend = getResend()
 
   if (!resend) {

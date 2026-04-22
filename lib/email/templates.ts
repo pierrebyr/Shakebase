@@ -74,11 +74,17 @@ ${bodyInner}
 </body>
 </html>`
 
-const header = (env?: string): string => `      <div style="padding:4px 8px 20px;display:flex;align-items:center;gap:10px;">
-        <div style="width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#e8c898,#c49155 60%,#8a5f2e);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.18);"></div>
-        <div style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;letter-spacing:-0.01em;color:#141414;">${esc(BRAND.name)}</div>
-        ${env ? `<div style="margin-left:auto;font-size:10px;letter-spacing:0.1em;color:#9a9a9a;text-transform:uppercase;font-family:ui-monospace,'SF Mono',Menlo,monospace;">${esc(env)}</div>` : ''}
-      </div>`
+// Gmail (web + Android) strips display:flex and gap. Use tables for any
+// horizontal grouping — widely supported, predictable spacing.
+const header = (env?: string): string => `      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="padding:4px 8px 20px;">
+        <tr>
+          <td width="20" style="vertical-align:middle;padding-right:12px;">
+            <div style="width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#e8c898,#c49155 60%,#8a5f2e);box-shadow:inset 0 -2px 3px rgba(0,0,0,0.18);"></div>
+          </td>
+          <td style="vertical-align:middle;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;letter-spacing:-0.01em;color:#141414;line-height:1;">${esc(BRAND.name)}</td>
+          ${env ? `<td style="vertical-align:middle;text-align:right;font-size:10px;letter-spacing:0.1em;color:#9a9a9a;text-transform:uppercase;font-family:ui-monospace,'SF Mono',Menlo,monospace;">${esc(env)}</td>` : ''}
+        </tr>
+      </table>`
 
 const card = (inner: string): string => `      <div style="background:#ffffff;border:1px solid rgba(10,10,10,0.08);border-radius:18px;padding:36px 36px 32px;">
 ${inner}
@@ -140,13 +146,17 @@ ${p(`You've been added to <strong style="color:#141414;font-weight:500;">${e(i.w
 
 ${hairline()}
 
-        <div style="display:flex;gap:14px;align-items:center;padding:14px 16px;background:#faf8f1;border-radius:12px;border:1px solid rgba(10,10,10,0.05);">
-          <div style="width:36px;height:36px;border-radius:50%;background:#e8c898;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-style:italic;font-size:16px;color:#8a5f2e;">${e(initial)}</div>
-          <div>
-            <div style="font-size:13px;color:#141414;font-weight:500;">${e(i.inviterName)}</div>
-            <a href="mailto:${e(i.inviterEmail)}" style="font-size:12px;color:#8a5f2e;text-decoration:none;border-bottom:1px solid rgba(138,95,46,0.25);">${e(i.inviterEmail)}</a>
-          </div>
-        </div>
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#faf8f1;border-radius:12px;border:1px solid rgba(10,10,10,0.05);">
+          <tr>
+            <td width="36" style="padding:14px 0 14px 16px;vertical-align:middle;">
+              <div style="width:36px;height:36px;border-radius:50%;background:#e8c898;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:16px;color:#8a5f2e;line-height:36px;text-align:center;">${e(initial)}</div>
+            </td>
+            <td style="padding:14px 16px 14px 14px;vertical-align:middle;">
+              <div style="font-size:13px;color:#141414;font-weight:500;line-height:1.4;">${e(i.inviterName)}</div>
+              <a href="mailto:${e(i.inviterEmail)}" style="font-size:12px;color:#8a5f2e;text-decoration:none;border-bottom:1px solid rgba(138,95,46,0.25);line-height:1.4;">${e(i.inviterEmail)}</a>
+            </td>
+          </tr>
+        </table>
 
         <div style="font-size:12px;color:#9a9a9a;margin-top:18px;line-height:1.6;">Trouble with the button? Paste this link into your browser:<br/>
           <a href="${e(i.acceptUrl)}" style="color:#6e6e6e;text-decoration:none;border-bottom:1px solid rgba(10,10,10,0.15);word-break:break-all;">${e(i.acceptUrl)}</a>
