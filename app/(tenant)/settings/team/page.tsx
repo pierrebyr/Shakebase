@@ -674,7 +674,31 @@ async function renderTeamPage() {
               No active members yet. Invite someone above.
             </div>
           ) : (
-            active.map((m, i) => {
+            <>
+              {/* Column headers — same grid template as the rows. */}
+              <div
+                className="mono"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1fr 120px 1fr 70px 48px',
+                  gap: 14,
+                  padding: '12px 22px',
+                  borderBottom: '1px solid var(--line-2)',
+                  background: 'var(--bg-sunken)',
+                  fontSize: 10,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--ink-4)',
+                }}
+              >
+                <span>Member</span>
+                <span>Department</span>
+                <span>Role</span>
+                <span style={{ textAlign: 'right' }}>Last active</span>
+                <span style={{ textAlign: 'right' }}>Edits</span>
+                <span></span>
+              </div>
+              {active.map((m, i) => {
               const p = profiles.get(m.user_id!) ?? {
                 full_name: null,
                 department: null,
@@ -829,7 +853,8 @@ async function renderTeamPage() {
                   </div>
                 </div>
               )
-            })
+              })}
+            </>
           )}
         </div>
       </div>

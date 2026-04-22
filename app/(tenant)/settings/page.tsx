@@ -10,12 +10,13 @@ export default async function SettingsPage() {
 
   const { data } = await supabase
     .from('profiles')
-    .select('full_name, job_title, language, time_zone')
+    .select('full_name, job_title, department, language, time_zone')
     .eq('id', user.id)
     .maybeSingle()
   const profile = data as {
     full_name: string | null
     job_title: string | null
+    department: string | null
     language: string | null
     time_zone: string | null
   } | null
@@ -41,6 +42,7 @@ export default async function SettingsPage() {
           initial={{
             full_name: profile?.full_name ?? null,
             job_title: profile?.job_title ?? null,
+            department: profile?.department ?? null,
             language: profile?.language ?? null,
             time_zone: profile?.time_zone ?? null,
           }}

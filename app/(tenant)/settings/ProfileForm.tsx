@@ -67,6 +67,7 @@ type Props = {
   initial: {
     full_name: string | null
     job_title: string | null
+    department: string | null
     language: string | null
     time_zone: string | null
   }
@@ -117,15 +118,26 @@ export function ProfileForm({ initial, email }: Props) {
         />
       </label>
 
-      <label className="col" style={{ gap: 6 }}>
-        <span style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>Job title</span>
-        <input
-          name="job_title"
-          defaultValue={initial.job_title ?? ''}
-          className="sb-input"
-          placeholder="Head bartender"
-        />
-      </label>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <label className="col" style={{ gap: 6 }}>
+          <span style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>Job title</span>
+          <input
+            name="job_title"
+            defaultValue={initial.job_title ?? ''}
+            className="sb-input"
+            placeholder="Head bartender"
+          />
+        </label>
+        <label className="col" style={{ gap: 6 }}>
+          <span style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>Department</span>
+          <input
+            name="department"
+            defaultValue={initial.department ?? ''}
+            className="sb-input"
+            placeholder="Bar program"
+          />
+        </label>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <label className="col" style={{ gap: 6 }}>

@@ -10,6 +10,7 @@ export type ProfileResult = { ok: true } | { ok: false; error: string }
 const ProfileSchema = z.object({
   full_name: z.string().min(1, 'Name required').max(120),
   job_title: z.string().max(120).optional(),
+  department: z.string().max(120).optional(),
   language: z.string().max(40).optional(),
   time_zone: z.string().max(80).optional(),
 })
@@ -24,6 +25,7 @@ export async function updateProfileAction(
   const parsed = ProfileSchema.safeParse({
     full_name: String(formData.get('full_name') ?? '').trim(),
     job_title: String(formData.get('job_title') ?? '').trim(),
+    department: String(formData.get('department') ?? '').trim(),
     language: String(formData.get('language') ?? '').trim(),
     time_zone: String(formData.get('time_zone') ?? '').trim(),
   })
@@ -37,6 +39,7 @@ export async function updateProfileAction(
     .update({
       full_name: parsed.data.full_name,
       job_title: parsed.data.job_title || null,
+      department: parsed.data.department || null,
       language: parsed.data.language || null,
       time_zone: parsed.data.time_zone || null,
     } as never)
