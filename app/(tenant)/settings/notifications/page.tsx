@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
 import { requireUser } from '@/lib/auth/session'
@@ -7,9 +6,11 @@ import { Icon } from '@/components/icons'
 import { NotificationsForm } from './NotificationsForm'
 
 export default async function NotificationsSettingsPage() {
+  // Notifications are personal — any active member can set their own prefs.
+  // Row in user_notification_prefs is keyed on (user_id, workspace_id), so
+  // editors, viewers, and owners each get their own settings in each space.
   const user = await requireUser()
   const workspace = await getCurrentWorkspace()
-  if (workspace.owner_user_id !== user.id) redirect('/settings')
   const admin = createAdminClient()
 
   const { data } = await admin

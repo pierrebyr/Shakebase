@@ -150,7 +150,10 @@ async function renderTeamPage() {
 
   const admin = createAdminClient()
 
-  // Owner-gate
+  // Members gate — any active member can see the team page (editors,
+  // viewers included). Destructive actions (invite, role change, remove,
+  // danger zone) stay owner-only and are gated below both in the UI and
+  // inside each server action.
   const { data: me } = await withTimeout(
     admin
       .from('memberships')
@@ -160,11 +163,12 @@ async function renderTeamPage() {
       .not('joined_at', 'is', null)
       .maybeSingle(),
     3000,
-    'owner-gate',
+    'member-gate',
   )
-  if (!me || (me as { role: string }).role !== 'owner') {
+  if (!me) {
     redirect('/settings')
   }
+  const isOwner = (me as { role: string }).role === 'owner'
 
   const { data: memsData } = await withTimeout(
     admin
@@ -453,10 +457,12 @@ async function renderTeamPage() {
             </div>
           </div>
           <div className="row gap-sm" style={{ flexShrink: 0 }}>
-            <Link href="/settings/billing" className="btn-secondary">
-              <Icon name="settings" size={12} /> Workspace settings
-            </Link>
-            <InviteModalTrigger />
+            {isOwner && (
+              <Link href="/settings/billing" className="btn-secondary">
+                <Icon name="settings" size={12} /> Workspace settings
+              </Link>
+            )}
+            {isOwner && <InviteModalTrigger />}
           </div>
         </div>
         <div style={{ padding: '0 32px 22px' }}>
@@ -664,7 +670,7 @@ async function renderTeamPage() {
                 {active.length} active
               </span>
             </div>
-            <InviteModalTrigger>Invite teammate</InviteModalTrigger>
+            {isOwner && <InviteModalTrigger>Invite teammate</InviteModalTrigger>}
           </div>
         </div>
 
@@ -780,7 +786,7 @@ async function renderTeamPage() {
 
                   {/* Role */}
                   <div>
-                    {isYou || m.role === 'owner' ? (
+                    {isYou || m.role === 'owner' || !isOwner ? (
                       <span
                         className="pill"
                         style={{ ...rolePillStyle(m.role), fontSize: 11 }}
@@ -835,7 +841,7 @@ async function renderTeamPage() {
 
                   {/* Actions */}
                   <div style={{ textAlign: 'right' }}>
-                    {isYou || m.role === 'owner' ? (
+                    {isYou || m.role === 'owner' || !isOwner ? (
                       <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>—</span>
                     ) : (
                       <form action={removeMemberAction}>
@@ -887,7 +893,7 @@ async function renderTeamPage() {
                   {!emailConfigured() ? ' · Resend not configured, send links manually' : ''}
                 </span>
               </div>
-              <InviteModalTrigger>Invite more</InviteModalTrigger>
+              {isOwner && <InviteModalTrigger>Invite more</InviteModalTrigger>}
             </div>
           </div>
           <div>
@@ -951,6 +957,8 @@ async function renderTeamPage() {
                     {ROLE_META[inv.role].label}
                   </span>
                   <div className="row gap-sm">
+                    {isOwner && (
+                      <>
                     <form action={resendInviteAction}>
                       <input type="hidden" name="membership_id" value={inv.id} />
                       <button
@@ -971,6 +979,8 @@ async function renderTeamPage() {
                         Revoke
                       </button>
                     </form>
+                      </>
+                    )}
                   </div>
                 </div>
               )
@@ -1138,7 +1148,7 @@ async function renderTeamPage() {
             </div>
           </div>
 
-          <DangerZone workspaceName={workspace.name} members={transferableMembers} />
+          {isOwner && <DangerZone workspaceName={workspace.name} members={transferableMembers} />}
         </div>
       </div>
     </>

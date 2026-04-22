@@ -18,13 +18,9 @@ const SECTIONS: Section[] = [
   { id: 'sessions', label: 'Sessions', icon: 'clock', group: 'Account' },
   { id: 'general', label: 'General', icon: 'settings', group: 'Workspace', ownerOnly: true },
   { id: 'appearance', label: 'Appearance', icon: 'sparkle', group: 'Workspace', ownerOnly: true },
-  {
-    id: 'notifications',
-    label: 'Notifications',
-    icon: 'bell',
-    group: 'Workspace',
-    ownerOnly: true,
-  },
+  // Notifications prefs are scoped per-user (user_notification_prefs keyed on
+  // user_id + workspace_id), so every member gets their own settings.
+  { id: 'notifications', label: 'Notifications', icon: 'bell', group: 'Workspace' },
   // Team is visible to everyone (read-only for non-owners).
   { id: 'team', label: 'Team & roles', icon: 'users', group: 'Workspace' },
   { id: 'integrations', label: 'Integrations', icon: 'plug', group: 'Data', ownerOnly: true },

@@ -10,6 +10,11 @@ import { Avatar } from '@/components/cocktail/Avatar'
 import { CollectionPicker } from '@/components/cocktail/CollectionPicker'
 import { CopyRecipeButton } from '@/components/cocktail/CopyRecipeButton'
 import { Icon } from '@/components/icons'
+import {
+  findSimilar,
+  ingredientKey,
+  type SimilarCandidate,
+} from '@/lib/cocktail/similar'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -132,6 +137,74 @@ export default async function CocktailDetailPage({ params }: Props) {
   }[]
   const memberIds = ((currentMembershipsData ?? []) as unknown as { collection_id: string }[]).map(
     (r) => r.collection_id,
+  )
+
+  // Similar cocktails — pull every published cocktail in the workspace with
+  // enough fields to score against the current one. This is one query + one
+  // in-memory sort; even 2000 cocktails is fine here.
+  type SiblingRow = {
+    id: string
+    slug: string
+    name: string
+    category: string | null
+    spirit_base: string | null
+    glass_type: string | null
+    orb_from: string | null
+    orb_to: string | null
+    image_url: string | null
+    creators: { name: string } | null
+    cocktail_ingredients: {
+      global_ingredient_id: string | null
+      workspace_ingredient_id: string | null
+      global_product_id: string | null
+      custom_name: string | null
+    }[]
+  }
+  const { data: siblingsData } = await supabase
+    .from('cocktails')
+    .select(
+      'id, slug, name, category, spirit_base, glass_type, orb_from, orb_to, image_url, creators(name), cocktail_ingredients(global_ingredient_id, workspace_ingredient_id, global_product_id, custom_name)',
+    )
+    .eq('workspace_id', workspace.id)
+    .neq('status', 'archived')
+    .neq('id', id)
+    .limit(500)
+  const siblingRows2 = (siblingsData ?? []) as unknown as SiblingRow[]
+  const candidates: SimilarCandidate[] = siblingRows2.map((r) => ({
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    category: r.category,
+    spirit_base: r.spirit_base,
+    glass_type: r.glass_type,
+    orb_from: r.orb_from,
+    orb_to: r.orb_to,
+    image_url: r.image_url,
+    creator_name: r.creators?.name ?? null,
+    ingredient_keys: r.cocktail_ingredients
+      .map((i) => ingredientKey(i))
+      .filter((k): k is string => k != null),
+  }))
+  const targetIngredientKeys = ingredients
+    .map((i) =>
+      ingredientKey({
+        global_ingredient_id: i.global_ingredient_id,
+        workspace_ingredient_id: i.workspace_ingredient_id,
+        global_product_id: i.global_products?.id ?? null,
+        custom_name: i.custom_name,
+      }),
+    )
+    .filter((k): k is string => k != null)
+  const similar = findSimilar(
+    {
+      id: cocktail.id,
+      category: cocktail.category,
+      spirit_base: cocktail.spirit_base,
+      glass_type: cocktail.glass_type,
+      ingredient_keys: targetIngredientKeys,
+    },
+    candidates,
+    { limit: 4, minScore: 0.1 },
   )
 
   const orbFrom = cocktail.orb_from ?? '#f6efe2'
@@ -477,6 +550,132 @@ export default async function CocktailDetailPage({ params }: Props) {
         </div>
       )}
 
+      {similar.length > 0 && (
+        <div style={{ marginTop: 32 }}>
+          <div
+            className="row"
+            style={{ justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}
+          >
+            <div className="col">
+              <span
+                className="mono"
+                style={{
+                  fontSize: 10.5,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--ink-4)',
+                }}
+              >
+                In the same vein
+              </span>
+              <h2
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-display)',
+                  fontStyle: 'italic',
+                  fontWeight: 400,
+                  fontSize: 22,
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                Similar cocktails.
+              </h2>
+            </div>
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gap: 14,
+            }}
+          >
+            {similar.map((c) => (
+              <Link
+                key={c.id}
+                href={`/cocktails/${c.id}`}
+                className="card"
+                style={{
+                  padding: 0,
+                  overflow: 'hidden',
+                  textAlign: 'left',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'transform 180ms ease, box-shadow 220ms ease',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'relative',
+                    aspectRatio: '4 / 5',
+                    background: c.image_url
+                      ? '#f4efe0'
+                      : `radial-gradient(120% 100% at 30% 30%, ${c.orb_from ?? '#f4efe0'}, ${c.orb_to ?? '#c9b89a'} 70%)`,
+                    display: 'grid',
+                    placeItems: 'center',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {c.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={c.image_url}
+                      alt={c.name}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <DrinkOrb
+                      from={c.orb_from ?? '#f4efe0'}
+                      to={c.orb_to ?? '#c9b89a'}
+                      size={90}
+                      ring
+                    />
+                  )}
+                </div>
+                <div style={{ padding: 14 }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontStyle: 'italic',
+                      fontSize: 16,
+                      letterSpacing: '-0.01em',
+                      color: 'var(--ink-1)',
+                      marginBottom: 4,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {c.name}
+                  </div>
+                  <div
+                    className="mono"
+                    style={{
+                      fontSize: 10.5,
+                      color: 'var(--ink-4)',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {[c.spirit_base, c.category].filter(Boolean).join(' · ') ||
+                      c.creator_name ||
+                      '—'}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div
         style={{
           display: 'flex',
@@ -484,6 +683,7 @@ export default async function CocktailDetailPage({ params }: Props) {
           alignItems: 'center',
           gap: 12,
           flexWrap: 'wrap',
+          marginTop: 32,
         }}
       >
         <Link href="/cocktails" className="btn-ghost">
