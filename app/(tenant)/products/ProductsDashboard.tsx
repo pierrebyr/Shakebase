@@ -30,6 +30,7 @@ export type Product = {
 
 export type UsedInCocktail = {
   id: string
+  slug: string
   name: string
   category: string | null
   venue: string | null
@@ -317,7 +318,7 @@ export function ProductsDashboard({ products }: { products: Product[] }) {
               {active.used_in.slice(0, 6).map((c) => (
                 <Link
                   key={c.id}
-                  href={`/cocktails/${c.id}`}
+                  href={`/cocktails/${c.slug}`}
                   className="row gap-md"
                   style={{
                     padding: 12,

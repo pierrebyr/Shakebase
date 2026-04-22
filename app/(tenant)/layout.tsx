@@ -74,7 +74,7 @@ export default async function TenantLayout({ children }: { children: React.React
     withTimeout(
       admin
         .from('cocktails')
-        .select('id, name, orb_from, orb_to')
+        .select('id, slug, name, orb_from, orb_to')
         .eq('workspace_id', workspace.id)
         .eq('pinned', true)
         .neq('status', 'archived')

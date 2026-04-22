@@ -20,6 +20,10 @@ export type SimilarCandidate = {
   name: string
   category: string | null
   spirit_base: string | null
+  /** Resolved label shown in card subtitles — for mono-spirit workspaces
+   *  this is the product expression (Blanco, Añejo…) rather than the
+   *  generic spirit family. */
+  spirit_label: string | null
   glass_type: string | null
   orb_from: string | null
   orb_to: string | null

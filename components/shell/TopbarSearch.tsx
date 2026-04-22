@@ -67,7 +67,7 @@ export function TopbarSearch() {
   const navigate = (hit: SearchHit) => {
     setOpen(false)
     setQuery('')
-    if (hit.kind === 'cocktail') router.push(`/cocktails/${hit.id}`)
+    if (hit.kind === 'cocktail') router.push(`/cocktails/${hit.slug}`)
     else if (hit.kind === 'creator') router.push(`/creators/${hit.id}`)
     else router.push(`/ingredients/${hit.id}`)
   }

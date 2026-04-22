@@ -1,7 +1,9 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 import { Icon } from '@/components/icons'
 import { BasicsForm } from './BasicsForm'
 import { MethodEditor } from './MethodEditor'
@@ -41,20 +43,34 @@ type IngredientJoin = {
 }
 
 export default async function EditCocktailPage({ params }: Props) {
-  const { id } = await params
+  const { id: param } = await params
   const workspace = await getCurrentWorkspace()
   const supabase = await createClient()
+
+  // Backwards compat — old /cocktails/{uuid}/edit links redirect to slug URL.
+  if (UUID_RE.test(param)) {
+    const { data: found } = await supabase
+      .from('cocktails')
+      .select('slug')
+      .eq('id', param)
+      .eq('workspace_id', workspace.id)
+      .maybeSingle()
+    const slug = (found as { slug: string } | null)?.slug
+    if (!slug) notFound()
+    redirect(`/cocktails/${slug}/edit`)
+  }
 
   const { data: cocktailData } = await supabase
     .from('cocktails')
     .select(
       'id, slug, name, status, category, spirit_base, glass_type, garnish, tasting_notes, method_steps, featured, pinned, image_url, images',
     )
-    .eq('id', id)
+    .eq('slug', param)
     .eq('workspace_id', workspace.id)
     .maybeSingle()
   const cocktail = cocktailData as CocktailRow | null
   if (!cocktail) notFound()
+  const id = cocktail.id
 
   // Ingredients
   const { data: ingredientsData } = await supabase
@@ -87,7 +103,7 @@ export default async function EditCocktailPage({ params }: Props) {
     <div className="page fade-up" style={{ maxWidth: 960 }}>
       <div className="page-head">
         <Link
-          href={`/cocktails/${cocktail.id}`}
+          href={`/cocktails/${cocktail.slug}`}
           className="row gap-sm"
           style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 12 }}
         >

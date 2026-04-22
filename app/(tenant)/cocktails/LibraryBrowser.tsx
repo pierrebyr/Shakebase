@@ -409,7 +409,7 @@ function CocktailTable({ rows, monoSpirit }: { rows: LibraryCocktail[]; monoSpir
       {rows.map((c, i) => (
         <Link
           key={c.id}
-          href={`/cocktails/${c.id}`}
+          href={`/cocktails/${c.slug}`}
           style={{
             display: 'grid',
             gridTemplateColumns: cols,

@@ -1455,4 +1455,29 @@ input[type='color']::-moz-color-swatch {
   }
 }
 
+/* Similar-cocktails row on the detail page. */
+.similar-card {
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 220ms ease,
+    border-color 180ms ease;
+  will-change: transform;
+}
+.similar-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-3);
+  border-color: rgba(196, 145, 85, 0.35);
+}
+
+@media (max-width: 960px) {
+  .similar-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+@media (max-width: 640px) {
+  .similar-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 

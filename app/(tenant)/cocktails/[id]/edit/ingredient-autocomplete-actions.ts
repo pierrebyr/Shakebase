@@ -140,7 +140,6 @@ export async function addIngredientFromAutocompleteAction(input: {
   })
   if (error) return { error: error.message }
 
-  revalidatePath(`/cocktails/${input.cocktail_id}`)
-  revalidatePath(`/cocktails/${input.cocktail_id}/edit`)
+  revalidatePath('/cocktails', 'layout')
   return { ok: true }
 }

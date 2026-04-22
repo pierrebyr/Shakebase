@@ -289,7 +289,7 @@ export default async function DashboardPage() {
             {featuredFallback.map((c) => (
               <Link
                 key={c.id}
-                href={`/cocktails/${c.id}`}
+                href={`/cocktails/${c.slug}`}
                 className="card"
                 style={{
                   padding: 0,
@@ -404,7 +404,7 @@ export default async function DashboardPage() {
             recent.map((c, i) => (
               <Link
                 key={c.id}
-                href={`/cocktails/${c.id}`}
+                href={`/cocktails/${c.slug}`}
                 className="row"
                 style={{
                   gap: 12,

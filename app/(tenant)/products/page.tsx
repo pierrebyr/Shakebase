@@ -30,6 +30,7 @@ type WorkspaceRow = {
 
 type CocktailRow = {
   id: string
+  slug: string
   name: string
   category: string | null
   venue: string | null
@@ -74,7 +75,7 @@ export default async function ProductsPage() {
   const { data: cocktailsData } = await supabase
     .from('cocktails')
     .select(
-      'id, name, category, venue, orb_from, orb_to, cocktail_ingredients(global_product_id)',
+      'id, slug, name, category, venue, orb_from, orb_to, cocktail_ingredients(global_product_id)',
     )
     .eq('workspace_id', workspace.id)
     .neq('status', 'archived')
@@ -90,6 +91,7 @@ export default async function ProductsPage() {
       const list = cocktailsByProductId.get(pid) ?? []
       list.push({
         id: c.id,
+        slug: c.slug,
         name: c.name,
         category: c.category,
         venue: c.venue,

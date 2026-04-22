@@ -50,7 +50,7 @@ export default async function EditProductPage({ params }: Props) {
   // Cocktails that reference this product
   const { data: usedData } = await supabase
     .from('cocktails')
-    .select('id, name, category, orb_from, orb_to, image_url')
+    .select('id, slug, name, category, orb_from, orb_to, image_url')
     .eq('workspace_id', workspace.id)
     .eq('base_product_id', g.id)
     .neq('status', 'archived')
@@ -59,6 +59,7 @@ export default async function EditProductPage({ params }: Props) {
 
   const used: UsedInRef[] = ((usedData ?? []) as unknown as UsedInRef[]).map((c) => ({
     id: c.id,
+    slug: c.slug,
     name: c.name,
     category: c.category,
     orb_from: c.orb_from,

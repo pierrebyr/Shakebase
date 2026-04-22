@@ -15,6 +15,7 @@ type NavItem = {
 
 export type PinnedCocktail = {
   id: string
+  slug: string
   name: string
   orb_from: string | null
   orb_to: string | null
@@ -97,9 +98,9 @@ export function Sidebar({
           {pinned.map((c) => (
             <Link
               key={c.id}
-              href={`/cocktails/${c.id}`}
+              href={`/cocktails/${c.slug}`}
               className="nav-item"
-              data-active={pathname === `/cocktails/${c.id}`}
+              data-active={pathname === `/cocktails/${c.slug}`}
             >
               <DrinkOrb from={c.orb_from ?? '#f4efe0'} to={c.orb_to ?? '#c9b89a'} size={16} />
               <span>{c.name}</span>

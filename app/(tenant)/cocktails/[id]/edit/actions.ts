@@ -63,8 +63,7 @@ export async function updateBasicsAction(_: unknown, formData: FormData): Promis
 
   if (error) return { ok: false, error: error.message }
 
-  revalidatePath(`/cocktails/${id}`)
-  revalidatePath('/cocktails')
+  revalidatePath('/cocktails', 'layout')
   // Sidebar is rendered from the tenant layout — flush it so a pin toggle
   // shows up (or disappears) immediately.
   revalidatePath('/', 'layout')
@@ -111,7 +110,7 @@ export async function updateMethodAction(_: unknown, formData: FormData): Promis
     .eq('workspace_id', workspace.id)
 
   if (error) return { ok: false, error: error.message }
-  revalidatePath(`/cocktails/${parsed.data.id}`)
+  revalidatePath('/cocktails', 'layout')
   return { ok: true }
 }
 
@@ -185,8 +184,7 @@ export async function addIngredientAction(_: unknown, formData: FormData): Promi
   const { error } = await supabase.from('cocktail_ingredients').insert(row as never)
   if (error) return { ok: false, error: error.message }
 
-  revalidatePath(`/cocktails/${input.cocktail_id}`)
-  revalidatePath(`/cocktails/${input.cocktail_id}/edit`)
+  revalidatePath('/cocktails', 'layout')
   return { ok: true }
 }
 
@@ -219,8 +217,7 @@ export async function removeIngredientAction(formData: FormData): Promise<void> 
   const { error } = await supabase.from('cocktail_ingredients').delete().eq('id', parsed.data.id)
   if (error) throw new Error(error.message)
 
-  revalidatePath(`/cocktails/${parsed.data.cocktail_id}`)
-  revalidatePath(`/cocktails/${parsed.data.cocktail_id}/edit`)
+  revalidatePath('/cocktails', 'layout')
 }
 
 const DeleteCocktailSchema = z.object({ id: z.string().uuid() })

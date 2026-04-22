@@ -157,13 +157,14 @@ export async function submitCocktailDraft(_: unknown, formData: FormData): Promi
       creator_id: d.creator_id || null,
       created_by: user.id,
     } as never)
-    .select('id')
-    .single<{ id: string }>()
+    .select('id, slug')
+    .single<{ id: string; slug: string }>()
 
   if (insertError || !inserted) {
     return { ok: false, error: insertError?.message ?? 'Could not create cocktail' }
   }
   const cocktailId = inserted.id
+  const cocktailSlug = inserted.slug
 
   // 2. Resolve any free-text names to global_ingredients (upsert), then
   //    batch-insert cocktail_ingredients with FK links (no custom_name).
@@ -249,5 +250,5 @@ export async function submitCocktailDraft(_: unknown, formData: FormData): Promi
     },
   } as never)
 
-  redirect(`/cocktails/${cocktailId}`)
+  redirect(`/cocktails/${cocktailSlug}`)
 }

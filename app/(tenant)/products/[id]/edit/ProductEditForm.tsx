@@ -13,6 +13,7 @@ import {
 
 export type UsedInRef = {
   id: string
+  slug: string
   name: string
   category: string | null
   orb_from: string | null
@@ -694,7 +695,7 @@ export function ProductEditForm({
                 {usedIn.map((c) => (
                   <Link
                     key={c.id}
-                    href={`/cocktails/${c.id}`}
+                    href={`/cocktails/${c.slug}`}
                     className="row gap-sm"
                     style={{
                       padding: 8,

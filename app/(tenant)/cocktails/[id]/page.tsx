@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { slugifyIngredient } from '@/lib/ingredient-slug'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
 import { DrinkOrb } from '@/components/cocktail/DrinkOrb'
@@ -63,22 +63,41 @@ type IngredientJoin = {
   workspace_ingredients: { id: string; name: string } | null
 }
 
+// UUID shape — used to detect legacy /cocktails/{uuid} URLs and permanently
+// redirect them to the canonical /cocktails/{slug} form.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export default async function CocktailDetailPage({ params }: Props) {
-  const { id } = await params
+  const { id: param } = await params
   const workspace = await getCurrentWorkspace()
   const supabase = await createClient()
+
+  // Backwards compat: the route is now slug-based. A UUID in the URL means an
+  // old link — look up the cocktail and redirect to the slug URL.
+  if (UUID_RE.test(param)) {
+    const { data: found } = await supabase
+      .from('cocktails')
+      .select('slug')
+      .eq('id', param)
+      .eq('workspace_id', workspace.id)
+      .maybeSingle()
+    const slug = (found as { slug: string } | null)?.slug
+    if (!slug) notFound()
+    redirect(`/cocktails/${slug}`)
+  }
 
   const { data: cocktailData } = await supabase
     .from('cocktails')
     .select(
       'id, slug, name, status, category, spirit_base, glass_type, garnish, tasting_notes, flavor_profile, orb_from, orb_to, venue, event_origin, image_url, images, created_at, updated_at, method_steps, creators(id, name, venue, bio, photo_url), global_products(brand, expression)',
     )
-    .eq('id', id)
+    .eq('slug', param)
     .eq('workspace_id', workspace.id)
     .maybeSingle()
 
   const cocktail = cocktailData as unknown as CocktailRow | null
   if (!cocktail) notFound()
+  const id = cocktail.id
 
   // Detect mono-spirit workspaces (e.g. Casa Dragones — only tequila but multiple
   // expressions). In that case we surface the product expression (Blanco, Añejo…)
@@ -153,6 +172,7 @@ export default async function CocktailDetailPage({ params }: Props) {
     orb_to: string | null
     image_url: string | null
     creators: { name: string } | null
+    global_products: { expression: string } | null
     cocktail_ingredients: {
       global_ingredient_id: string | null
       workspace_ingredient_id: string | null
@@ -163,7 +183,7 @@ export default async function CocktailDetailPage({ params }: Props) {
   const { data: siblingsData } = await supabase
     .from('cocktails')
     .select(
-      'id, slug, name, category, spirit_base, glass_type, orb_from, orb_to, image_url, creators(name), cocktail_ingredients(global_ingredient_id, workspace_ingredient_id, global_product_id, custom_name)',
+      'id, slug, name, category, spirit_base, glass_type, orb_from, orb_to, image_url, creators(name), global_products(expression), cocktail_ingredients(global_ingredient_id, workspace_ingredient_id, global_product_id, custom_name)',
     )
     .eq('workspace_id', workspace.id)
     .neq('status', 'archived')
@@ -176,6 +196,9 @@ export default async function CocktailDetailPage({ params }: Props) {
     name: r.name,
     category: r.category,
     spirit_base: r.spirit_base,
+    // For mono-spirit workspaces we surface the product expression in the
+    // subtitle instead of a redundant "Tequila · Martini" kicker.
+    spirit_label: monoSpirit ? r.global_products?.expression ?? r.spirit_base : r.spirit_base,
     glass_type: r.glass_type,
     orb_from: r.orb_from,
     orb_to: r.orb_to,
@@ -204,7 +227,7 @@ export default async function CocktailDetailPage({ params }: Props) {
       ingredient_keys: targetIngredientKeys,
     },
     candidates,
-    { limit: 4, minScore: 0.1 },
+    { limit: 5, minScore: 0.1 },
   )
 
   const orbFrom = cocktail.orb_from ?? '#f6efe2'
@@ -583,24 +606,24 @@ export default async function CocktailDetailPage({ params }: Props) {
             </div>
           </div>
           <div
+            className="similar-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gridTemplateColumns: `repeat(${similar.length}, 1fr)`,
               gap: 14,
             }}
           >
             {similar.map((c) => (
               <Link
                 key={c.id}
-                href={`/cocktails/${c.id}`}
-                className="card"
+                href={`/cocktails/${c.slug}`}
+                className="card similar-card"
                 style={{
                   padding: 0,
                   overflow: 'hidden',
                   textAlign: 'left',
                   display: 'flex',
                   flexDirection: 'column',
-                  transition: 'transform 180ms ease, box-shadow 220ms ease',
                 }}
               >
                 <div
@@ -665,7 +688,7 @@ export default async function CocktailDetailPage({ params }: Props) {
                       textOverflow: 'ellipsis',
                     }}
                   >
-                    {[c.spirit_base, c.category].filter(Boolean).join(' · ') ||
+                    {[c.spirit_label, c.category].filter(Boolean).join(' · ') ||
                       c.creator_name ||
                       '—'}
                   </div>
@@ -696,7 +719,7 @@ export default async function CocktailDetailPage({ params }: Props) {
             allCollections={allCollections}
             memberIds={memberIds}
           />
-          <Link href={`/cocktails/${cocktail.id}/edit`} className="btn-secondary">
+          <Link href={`/cocktails/${cocktail.slug}/edit`} className="btn-secondary">
             <Icon name="edit" size={13} />
             Edit
           </Link>

@@ -57,7 +57,7 @@ export function CocktailCard({
   const spiritLabel = c.base_product_expression ?? c.spirit_base
   const showActions = allCollections !== undefined || removeFromCollectionId !== undefined
   return (
-    <Link href={`/cocktails/${c.id}`} className="card fade-up cocktail-card">
+    <Link href={`/cocktails/${c.slug}`} className="card fade-up cocktail-card">
       <div
         className="cocktail-card-thumb"
         style={{

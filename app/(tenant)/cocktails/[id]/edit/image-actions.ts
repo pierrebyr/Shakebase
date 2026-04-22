@@ -51,10 +51,10 @@ async function persistImages(
   return { error: error?.message ?? null }
 }
 
-function invalidate(cocktailId: string): void {
-  revalidatePath(`/cocktails/${cocktailId}`)
-  revalidatePath(`/cocktails/${cocktailId}/edit`)
-  revalidatePath('/cocktails')
+function invalidate(_cocktailId: string): void {
+  // Route is now slug-based; since we only have the id here, invalidate the
+  // whole /cocktails subtree instead of looking up the slug.
+  revalidatePath('/cocktails', 'layout')
 }
 
 // Replaces (or clears) the PRIMARY image. images[0] is overwritten; the
