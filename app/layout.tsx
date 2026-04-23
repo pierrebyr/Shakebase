@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import {
   Fraunces,
   Inter,
@@ -7,6 +8,8 @@ import {
   IBM_Plex_Mono,
 } from 'next/font/google'
 import '@/styles/globals.css'
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? 'G-H9NNE5P044'
 
 // next/font self-hosts and inlines fallback metrics, which removes the
 // render-blocking <link> to fonts.googleapis.com and cuts the font-
@@ -117,7 +120,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={fontClass}
     >
-      <body>{children}</body>
+      <body>
+        {GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="gtag-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
+        {children}
+      </body>
     </html>
   )
 }
