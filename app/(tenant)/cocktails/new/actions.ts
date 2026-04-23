@@ -10,6 +10,7 @@ import { slugify } from '@/lib/slug'
 import { formatIngredientAmount } from '@/lib/cocktail/categories'
 import { trackEvent } from '@/lib/activity/track'
 import { ACTIVITY_KINDS } from '@/lib/activity/kinds'
+import { checkCocktailCap, type Plan } from '@/lib/workspace/plan'
 
 const IngredientSchema = z.object({
   name: z.string(),
@@ -58,6 +59,10 @@ export async function submitCocktailDraft(_: unknown, formData: FormData): Promi
   const user = await getUser()
   if (!user) return { ok: false, error: 'Not signed in' }
   const workspace = await getCurrentWorkspace()
+
+  // Enforce per-plan cocktail cap before doing any write work.
+  const capError = await checkCocktailCap(workspace.id, (workspace.plan ?? 'studio') as Plan)
+  if (capError) return { ok: false, error: capError }
 
   const rawPayload = formData.get('payload')
   if (typeof rawPayload !== 'string') return { ok: false, error: 'Missing payload' }

@@ -23,6 +23,7 @@ const SignupSchema = z.object({
   fullName: z.string().min(2, 'Name required'),
   workspaceName: z.string().min(2, 'Workspace name required'),
   slug: z.string().regex(SLUG_REGEX, 'Slug: lowercase letters, numbers, dashes (3-40 chars)'),
+  plan: z.enum(['creator', 'starter', 'studio']).default('studio'),
 })
 
 export type SignupResult =
@@ -50,6 +51,7 @@ export async function signupAction(_: unknown, formData: FormData): Promise<Sign
     fullName: String(formData.get('fullName') ?? ''),
     workspaceName: String(formData.get('workspaceName') ?? ''),
     slug: String(formData.get('slug') ?? '').toLowerCase(),
+    plan: String(formData.get('plan') ?? 'studio'),
   }
   const parsed = SignupSchema.safeParse(raw)
   if (!parsed.success) {
@@ -91,6 +93,10 @@ export async function signupAction(_: unknown, formData: FormData): Promise<Sign
   const userId = signup.user.id
 
   // 2. Create workspace + membership + settings + notif prefs (admin client, bypasses RLS)
+  // Creator tier: free forever — reuse the existing 'gifted' subscription
+  // state so nothing ever charges, no trial clock. Starter/Studio go through
+  // the normal trial → Stripe-checkout flow.
+  const isCreatorPlan = input.plan === 'creator'
   const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
   const { data: ws, error: wsError } = await admin
@@ -99,9 +105,14 @@ export async function signupAction(_: unknown, formData: FormData): Promise<Sign
       slug: input.slug,
       name: input.workspaceName,
       owner_user_id: userId,
-      subscription_status: stripeConfigured() ? 'pending_payment' : 'trialing',
-      trial_ends_at: stripeConfigured() ? null : trialEndsAt,
-    })
+      plan: input.plan,
+      subscription_status: isCreatorPlan
+        ? 'gifted'
+        : stripeConfigured()
+          ? 'pending_payment'
+          : 'trialing',
+      trial_ends_at: isCreatorPlan ? null : stripeConfigured() ? null : trialEndsAt,
+    } as never)
     .select('id, slug')
     .single()
 
@@ -146,8 +157,8 @@ export async function signupAction(_: unknown, formData: FormData): Promise<Sign
     text: welcome.text,
   }).catch((err) => console.error('[signup] welcome email failed:', err))
 
-  // 3. Stripe Checkout (skipped when not configured — dev mode)
-  if (stripeConfigured()) {
+  // 3. Stripe Checkout (skipped for Creator tier and when Stripe isn't configured)
+  if (!isCreatorPlan && stripeConfigured()) {
     const checkoutUrl = await createTrialCheckoutSession({
       workspaceId,
       workspaceSlug: input.slug,

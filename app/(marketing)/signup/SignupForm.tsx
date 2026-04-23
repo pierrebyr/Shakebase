@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { signupAction, type SignupResult } from './actions'
 import { SLUG_REGEX } from '@/lib/constants'
 
@@ -9,6 +10,20 @@ type SlugCheck =
   | { state: 'checking' }
   | { state: 'ok' }
   | { state: 'taken' | 'invalid'; reason: string }
+
+type Plan = 'creator' | 'starter' | 'studio'
+
+const PLANS: Array<{
+  id: Plan
+  label: string
+  price: string
+  trailing: string
+  hint: string
+}> = [
+  { id: 'creator', label: 'Creator', price: 'Free', trailing: 'forever', hint: 'For bartenders & consultants' },
+  { id: 'starter', label: 'Starter', price: '$99', trailing: '/ mo · 14-day trial', hint: 'Small brand · 1 venue' },
+  { id: 'studio', label: 'Studio', price: '$399', trailing: '/ mo · 14-day trial', hint: 'Brands & bar groups' },
+]
 
 const initialState: SignupResult = { ok: true }
 
@@ -32,8 +47,18 @@ function slugify(v: string): string {
     .slice(0, 40)
 }
 
+function isPlan(v: string | null): v is Plan {
+  return v === 'creator' || v === 'starter' || v === 'studio'
+}
+
 export function SignupForm() {
   const [state, action, pending] = useActionState(signupAction, initialState)
+  const searchParams = useSearchParams()
+  const initialPlan = (() => {
+    const raw = searchParams?.get('plan')
+    return isPlan(raw) ? raw : 'studio'
+  })()
+  const [plan, setPlan] = useState<Plan>(initialPlan)
   const [slug, setSlug] = useState('')
   const [company, setCompany] = useState('')
   const [slugEdited, setSlugEdited] = useState(false)
@@ -42,6 +67,8 @@ export function SignupForm() {
   const [check, setCheck] = useState<SlugCheck>({ state: 'idle' })
   const [terms, setTerms] = useState(false)
   const [, startTransition] = useTransition()
+
+  const isCreator = plan === 'creator'
 
   // Auto-suggest slug from company unless user edited it
   useEffect(() => {
@@ -92,17 +119,42 @@ export function SignupForm() {
       case 'checking':
         return 'Checking…'
       case 'ok':
-        return 'Available — your team will sign in here'
+        return isCreator
+          ? 'Available — this is your personal handle'
+          : 'Available — your team will sign in here'
       case 'taken':
       case 'invalid':
         return check.reason
       default:
-        return 'Pick a workspace subdomain'
+        return isCreator ? 'Pick your handle' : 'Pick a workspace subdomain'
     }
   })()
 
   return (
     <form action={action}>
+      <input type="hidden" name="plan" value={plan} />
+
+      <div className="plan-picker" role="radiogroup" aria-label="Choose a plan">
+        {PLANS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            role="radio"
+            aria-checked={plan === p.id}
+            className="plan-picker-item"
+            data-active={plan === p.id}
+            onClick={() => setPlan(p.id)}
+          >
+            <div className="pp-label">{p.label}</div>
+            <div className="pp-price">
+              <span>{p.price}</span>
+              <small>{p.trailing}</small>
+            </div>
+            <div className="pp-hint">{p.hint}</div>
+          </button>
+        ))}
+      </div>
+
       <div className="auth-field">
         <label htmlFor="fullName">Full name</label>
         <input
@@ -111,25 +163,25 @@ export function SignupForm() {
           required
           autoComplete="name"
           className="auth-input"
-          placeholder="Eli Marchant"
+          placeholder={isCreator ? 'Eli Marchant' : 'Eli Marchant'}
         />
       </div>
 
       <div className="auth-field">
-        <label htmlFor="workspaceName">Company</label>
+        <label htmlFor="workspaceName">{isCreator ? 'Display name' : 'Company'}</label>
         <input
           id="workspaceName"
           name="workspaceName"
           required
           className="auth-input"
-          placeholder="Aurelia Spirits"
+          placeholder={isCreator ? 'Eli Marchant' : 'Aurelia Spirits'}
           value={company}
           onChange={(e) => setCompany(e.target.value)}
         />
       </div>
 
       <div className="auth-field">
-        <label htmlFor="email">Work email</label>
+        <label htmlFor="email">{isCreator ? 'Email' : 'Work email'}</label>
         <input
           id="email"
           name="email"
@@ -137,19 +189,21 @@ export function SignupForm() {
           required
           autoComplete="email"
           className="auth-input"
-          placeholder="eli@aurelia-spirits.com"
+          placeholder={isCreator ? 'you@email.com' : 'eli@aurelia-spirits.com'}
         />
         <div className="auth-field-hint">We&rsquo;ll send a magic link to confirm.</div>
       </div>
 
       <div className="auth-field">
-        <label htmlFor="slug">Workspace subdomain</label>
+        <label htmlFor="slug">
+          {isCreator ? 'Your handle' : 'Workspace subdomain'}
+        </label>
         <div className="sub-wrap">
           <input
             id="slug"
             name="slug"
             required
-            placeholder="aurelia"
+            placeholder={isCreator ? 'eli-marchant' : 'aurelia'}
             value={slug}
             onChange={(e) => {
               setSlugEdited(true)
@@ -247,12 +301,18 @@ export function SignupForm() {
           !terms
         }
       >
-        {pending ? 'Spinning up your workspace…' : 'Create your workspace'}
+        {pending
+          ? 'Spinning up your workspace…'
+          : isCreator
+            ? 'Create free workspace'
+            : 'Create your workspace'}
         <span className="arrow">→</span>
       </button>
 
       <p className="auth-legal">
-        Bartenders: free forever · Brands: 14-day trial · No credit card
+        {isCreator
+          ? 'Free forever · No credit card · Upgrade anytime'
+          : '14-day trial · No credit card · Cancel anytime'}
       </p>
     </form>
   )

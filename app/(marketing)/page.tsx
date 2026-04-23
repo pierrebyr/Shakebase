@@ -1320,7 +1320,7 @@ export default function MarketingHome() {
           <Stagger className="section-head center" stagger={0.08}>
             <div className="eyebrow">Pricing</div>
             <h2 className="section-title">
-              Free for bartenders. <span className="it">Priced by venue for brands.</span>
+              Free for bartenders. <span className="it">Flat-rate for brands.</span>
             </h2>
             <p className="section-sub" style={{ marginInline: 'auto' }}>
               Creators get a forever-free workspace. Brands start on a 14-day trial with no
@@ -1349,7 +1349,7 @@ export default function MarketingHome() {
                 <li>Community support</li>
               </ul>
               <Link
-                href="/signup"
+                href="/signup?plan=creator"
                 className="mk-btn sec lg"
                 style={{ justifyContent: 'center' }}
               >
@@ -1378,7 +1378,7 @@ export default function MarketingHome() {
                 <li>Email support</li>
               </ul>
               <Link
-                href="/signup"
+                href="/signup?plan=starter"
                 className="mk-btn sec lg"
                 style={{ justifyContent: 'center' }}
               >
@@ -1393,22 +1393,22 @@ export default function MarketingHome() {
               </div>
               <div className="plan-price">
                 <span className="amt">$399</span>
-                <span className="per">/ venue / month</span>
+                <span className="per">/ month</span>
               </div>
               <div className="plan-desc">
-                For spirits brands and bar groups with multiple venues, creators, and a full
-                R&amp;D pipeline.
+                For spirits brands, bar groups, and hospitality teams running a full R&amp;D and
+                production pipeline.
               </div>
               <ul className="plan-feats">
                 <li>Unlimited cocktails &amp; creators</li>
-                <li>Up to 25 venues, unlimited seats</li>
+                <li>Unlimited seats</li>
                 <li>Dedicated workspace subdomain</li>
                 <li>Full analytics + team activity tracking</li>
                 <li>POS sync (Toast Q4 2026)</li>
                 <li>Priority support</li>
               </ul>
               <Link
-                href="/signup"
+                href="/signup?plan=studio"
                 className="mk-btn amber lg"
                 style={{ justifyContent: 'center' }}
               >
@@ -1418,33 +1418,30 @@ export default function MarketingHome() {
 
           </div>
 
-          {/* Enterprise — set apart from the 3 self-serve tiers */}
+          {/* Enterprise — dark elegant strip set apart from the self-serve tiers */}
           <div className="price-enterprise">
-            <div>
-              <div className="ent-tag">Enterprise · Global</div>
-              <div className="ent-title">
-                25+ venues? <span>Let&rsquo;s talk.</span>
+            <div className="ent-row">
+              <div>
+                <div className="ent-tag">Enterprise</div>
+                <div className="ent-title">
+                  Built for <span className="it">global brands.</span>
+                </div>
+                <p className="ent-sub">
+                  For spirits groups and hospitality brands that need custom domains, SSO,
+                  procurement red-lines, and a dedicated success team.
+                </p>
+                <ul className="ent-feats">
+                  <li>Custom domain</li>
+                  <li>SSO</li>
+                  <li>Dedicated CSM</li>
+                  <li>Custom SLA</li>
+                  <li>Priority integrations</li>
+                </ul>
               </div>
+              <Link href="/contact?topic=sales" className="mk-btn amber lg">
+                Talk to sales →
+              </Link>
             </div>
-            <div>
-              <p className="ent-desc">
-                For spirits groups and hospitality brands that need custom domains,
-                SSO, procurement red-lines, and a dedicated success team.
-              </p>
-              <ul className="ent-feats">
-                <li>Unlimited venues</li>
-                <li>
-                  Custom domain (<code style={{ fontSize: 11 }}>recipes.yourbrand.com</code>)
-                </li>
-                <li>SSO (Google, Okta, Azure AD)</li>
-                <li>Dedicated success team</li>
-                <li>Custom SLA + audit log retention</li>
-                <li>Priority integration work</li>
-              </ul>
-            </div>
-            <Link href="/contact" className="mk-btn amber lg">
-              Talk to sales →
-            </Link>
           </div>
 
           <p

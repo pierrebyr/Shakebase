@@ -1105,6 +1105,7 @@ export type Database = {
           location: string | null
           name: string
           owner_user_id: string
+          plan: string
           slug: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -1119,6 +1120,7 @@ export type Database = {
           location?: string | null
           name: string
           owner_user_id: string
+          plan?: string
           slug: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -1133,6 +1135,7 @@ export type Database = {
           location?: string | null
           name?: string
           owner_user_id?: string
+          plan?: string
           slug?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null

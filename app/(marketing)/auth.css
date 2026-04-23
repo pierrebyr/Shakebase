@@ -634,3 +634,64 @@
   box-shadow: 0 0 0 3px rgba(126,218,155,0.3);
   animation: auth-pulse 2s infinite;
 }
+
+
+/* Plan picker at the top of the signup form */
+.plan-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.plan-picker-item {
+  border: 1px solid var(--line-1);
+  border-radius: 10px;
+  padding: 12px 10px;
+  background: var(--bg);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms, background 160ms, transform 160ms;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plan-picker-item:hover {
+  border-color: var(--ink-3);
+}
+.plan-picker-item[data-active='true'] {
+  border-color: var(--accent);
+  background: #fffbf3;
+  box-shadow: 0 0 0 3px rgba(196,145,85,0.12);
+}
+.plan-picker-item .pp-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.plan-picker-item[data-active='true'] .pp-label {
+  color: var(--accent-ink);
+}
+.plan-picker-item .pp-price {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-1);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.plan-picker-item .pp-price small {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--ink-4);
+  letter-spacing: 0;
+}
+.plan-picker-item .pp-hint {
+  font-size: 11px;
+  color: var(--ink-3);
+  line-height: 1.35;
+}
+@media (max-width: 520px) {
+  .plan-picker { grid-template-columns: 1fr; }
+}
