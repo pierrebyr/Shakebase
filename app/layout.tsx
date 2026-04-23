@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { cookies, headers } from 'next/headers'
 import {
   Fraunces,
   Inter,
@@ -110,8 +111,19 @@ export const metadata: Metadata = {
   alternates: { canonical: SITE_URL },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const fontClass = `${fraunces.variable} ${inter.variable} ${instrumentSerif.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`
+
+  // Google Analytics runs on marketing + tenant pages but never on the
+  // admin console (admin.* host) and never while a super-admin is
+  // impersonating a workspace. Keeps the GA property clean of internal
+  // ops traffic without needing to filter after the fact.
+  const [hdrs, cookieStore] = await Promise.all([headers(), cookies()])
+  const host = hdrs.get('host') ?? ''
+  const isAdminHost = host.startsWith('admin.')
+  const isImpersonating = Boolean(cookieStore.get('sb_impersonation')?.value)
+  const enableGA = Boolean(GA_ID) && !isAdminHost && !isImpersonating
+
   return (
     <html
       lang="en"
@@ -121,7 +133,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={fontClass}
     >
       <body>
-        {GA_ID && (
+        {enableGA && (
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
