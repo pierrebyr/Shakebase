@@ -69,10 +69,11 @@ directors at **spirits brands under $50M revenue**. Tequila, mezcal,
 craft gin, premium rum. They own cocktail canon but have it in Google
 Sheets + PDFs scattered across reps.
 
-**Write a 2-page case study** on Casa Dragones — even a light version.
-"How Casa Dragones canonicalized 260 cocktails across the field team" with
-concrete numbers (time saved, contributors, cocktail counts by season).
-This is the warmest proof point we have; use it.
+**Do NOT use Casa Dragones publicly.** They're on a complimentary
+"friends" workspace, not a paying customer — they haven't agreed to be a
+logo, a quote, or a case study. Zero external comms about them. If we want
+a case study, we need a paying design partner — possibly a DTC brand we
+onboard onto the new Starter tier.
 
 **Outbound plan:**
 
@@ -136,14 +137,18 @@ The gap between Free and €480/mo is a missing-middle. Small brands, DTC
 early-stage, single-bar programs, beverage consultants all fall into the
 chasm. They'd pay €50-150/mo but won't commit €480.
 
-### Proposed tiers
+### Tiers now live on the homepage (2026-04-23)
 
-| Tier           | Price               | Target                                                   | Seats | Venues      | Cocktails    |
-|----------------|---------------------|----------------------------------------------------------|-------|-------------|--------------|
-| **Creator**    | Free (future)       | Bartender personal portfolio                             | 1     | —           | 20           |
-| **Starter**    | €99 / mo            | Solo consultant, small brand, DTC early-stage, 1-venue program | 5     | 1           | 100          |
-| **Studio**     | €399 / venue / mo   | Spirits brand, bar group with 2–25 venues                | unlim | included    | unlim        |
-| **Enterprise** | Custom              | 25+ venues, custom domain, SOC 2, SSO, MSA red-lines     | unlim | unlim       | unlim        |
+| Tier           | Price                | Target                                                   | Seats | Venues   | Cocktails |
+|----------------|----------------------|----------------------------------------------------------|-------|----------|-----------|
+| **Creator**    | Free forever         | Bartenders, consultants, personal cocktail library       | 1     | —        | 25        |
+| **Starter**    | $99 / mo             | DTC brand, 1-venue program, beverage consultant          | 5     | 1        | 200       |
+| **Studio**     | $399 / venue / mo    | Spirits brand, bar group with 2–25 venues                | unlim | included | unlim     |
+| **Enterprise** | Let's talk           | 25+ venues, custom domain, SSO, custom SLA               | unlim | unlim    | unlim     |
+
+**US-first positioning:** pricing shown in USD. EUR/GBP available for
+Enterprise. Update Stripe products accordingly (see implementation notes
+below).
 
 **Why:**
 
@@ -159,15 +164,26 @@ chasm. They'd pay €50-150/mo but won't commit €480.
 - **Enterprise stays "let's talk"** — useful lever for bespoke deals with
   the first 2-3 big customers. Once a pattern settles, add a real price.
 
-### Transition plan
+### Implementation work still outstanding
 
-1. **Remove** the Bartender Free tier from the live pricing card.
-2. **Add** the Starter €99 tier.
-3. **Keep** Studio at €399-480/venue (test both — €480 is easy to round
-   down from anchor).
-4. **Update** the signup form: pick your tier at signup, Starter has a
-   14-day trial like Studio.
-5. Once Creator feature exists → put Bartender Free back.
+The homepage pricing grid is updated. To make these tiers real we still need:
+
+1. **Stripe products** — create `starter_monthly` ($99) and
+   `studio_per_venue_monthly` ($399). Deprecate the old EUR Studio price.
+2. **Plan selector at signup** — today every signup creates a "Studio"
+   workspace implicitly. Signup flow should let the user pick Creator
+   (free) vs Starter (14-day trial) vs Studio (14-day trial).
+3. **Free-tier limits enforcement** — the Creator tier needs server-side
+   caps: max 25 cocktails, 1 seat, no POS sync. Enforce at the action
+   layer (reject creates over the cap) with a clear upgrade CTA.
+4. **Per-venue billing on Studio** — Stripe subscription with
+   `quantity = venue_count`. UI somewhere to let the owner add/remove
+   venues and see the projected bill.
+5. **Billing portal copy** — update `/settings/billing` to reflect the
+   new tier names and prices.
+
+Rough order of work: `1 → 3 → 2 → 4 → 5`. Stripe products first because
+nothing else works without them.
 
 ### Honest pricing-page copy to add
 
@@ -194,13 +210,24 @@ chasm. They'd pay €50-150/mo but won't commit €480.
 
 ---
 
-## 6. Sanity check questions to answer before committing
+## 6. Decisions already made
 
-- Is Casa Dragones paying? If yes, at what price? If no, is there a plan
-  to convert?
-- What's the closest competitor and how do they price? (Check
-  RecipeIQ, Recipekeeper, BarKeeper, Backbar, etc.)
-- Is there a specific geographic market you want to dominate first?
-  (US spirits > EU spirits in sheer volume but EU has less competition)
-- Who's the first person who said "I'd pay for this" — can we re-interview
-  them and use their words in the case study?
+- **Casa Dragones is off-limits** for public comms. Complimentary
+  "friends" workspace, not a design partner or case study.
+- **US-first** for both the ICP (spirits brands < $50M, US-based) and
+  the currency (USD on the pricing grid).
+- **Creator tier is live** — bartenders get a free forever workspace
+  even though the full marketplace features (public profile, Explore,
+  discovery) are parked. The workspace itself is fully functional;
+  what's missing is the public surface.
+
+## 7. Still open
+
+- What's the closest competitor and how do they price? (RecipeIQ,
+  Backbar, BarKeeper, Recipekeeper — competitive audit still pending.)
+- When someone says "I'd pay for this" in an outbound reply, can we
+  record the conversation (with consent) and use their language —
+  anonymously if needed — for a case study placeholder?
+- Do we cap Starter workspace at 1 venue or let it grow into "1 venue
+  + overflow $39/venue" mid-tier upsell? Decide after the first 5
+  Starter customers.
