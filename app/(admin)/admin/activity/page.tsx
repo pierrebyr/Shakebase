@@ -47,10 +47,9 @@ export default async function AdminActivityPage({
 
   const admin = createAdminClient()
 
-  // Pull a window's worth of events + the preceding window (for anomaly
-  // comparison) in parallel. The admin client bypasses RLS so we see
-  // everything cross-tenant. Exclude impersonation from aggregates but
-  // keep them in the timeline so ops can audit their own activity.
+  // Pull current + preceding window for delta. Admin client bypasses RLS
+  // so we see everything cross-tenant. Impersonation excluded from
+  // aggregates so ops don't pollute their own stats.
   const [{ data: rowsData }, { data: prevData }, { data: wsData }] = await Promise.all([
     admin
       .from('activity_events')
@@ -76,16 +75,12 @@ export default async function AdminActivityPage({
     workspaces.set(w.id, w)
   }
 
-  // Totals — break total out by window (pre-filtered to `days` already)
   const totalEvents = events.length
   const activeUsers = new Set(events.map((e) => e.user_id).filter(Boolean)).size
   const activeWorkspaces = new Set(events.map((e) => e.workspace_id)).size
+  const last24 = events.filter((e) => Date.now() - new Date(e.occurred_at).getTime() < DAY_MS).length
 
-  const last24 = events.filter(
-    (e) => Date.now() - new Date(e.occurred_at).getTime() < DAY_MS,
-  ).length
-
-  // Events per workspace (current window) + anomaly vs previous window
+  // Events per workspace + anomaly vs previous window
   const byWs = new Map<string, { total: number; kinds: Map<string, number> }>()
   for (const e of events) {
     const hit = byWs.get(e.workspace_id)
@@ -110,8 +105,7 @@ export default async function AdminActivityPage({
   }
   const rows: Row[] = [...byWs.entries()]
     .map(([wsId, v]) => {
-      const topKind =
-        [...v.kinds.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+      const topKind = [...v.kinds.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
       const prev = prevByWs.get(wsId) ?? 0
       const delta = prev > 0 ? (v.total - prev) / prev : null
       return { workspace: workspaces.get(wsId), id: wsId, total: v.total, topKind, delta }
@@ -119,9 +113,14 @@ export default async function AdminActivityPage({
     .sort((a, b) => b.total - a.total)
     .slice(0, 15)
 
-  // Anomaly callout: active workspaces in current window whose search.query
-  // count more than doubled vs previous window.
-  type Spike = { workspace: WorkspaceMeta | undefined; id: string; current: number; previous: number }
+  // Anomaly callout — active workspaces whose search volume more than
+  // doubled vs the previous window (>= 10 queries threshold filters noise).
+  type Spike = {
+    workspace: WorkspaceMeta | undefined
+    id: string
+    current: number
+    previous: number
+  }
   const spikes: Spike[] = []
   for (const [wsId, v] of byWs) {
     const currSearches = v.kinds.get(ACTIVITY_KINDS.SEARCH_QUERY) ?? 0
@@ -130,13 +129,17 @@ export default async function AdminActivityPage({
       (e) => e.workspace_id === wsId && e.kind === ACTIVITY_KINDS.SEARCH_QUERY,
     ).length
     if (prevSearches > 0 && currSearches / prevSearches >= 2) {
-      spikes.push({ workspace: workspaces.get(wsId), id: wsId, current: currSearches, previous: prevSearches })
+      spikes.push({
+        workspace: workspaces.get(wsId),
+        id: wsId,
+        current: currSearches,
+        previous: prevSearches,
+      })
     }
   }
   spikes.sort((a, b) => b.current / Math.max(1, b.previous) - a.current / Math.max(1, a.previous))
 
-  // Top cross-tenant search queries (counts only — per workspace attribution
-  // deliberately hidden in the cross-tenant view for privacy).
+  // Top cross-tenant queries — counts only, attribution hidden for privacy.
   const searchCounts = new Map<string, number>()
   for (const e of events) {
     if (e.kind !== ACTIVITY_KINDS.SEARCH_QUERY) continue
@@ -149,266 +152,291 @@ export default async function AdminActivityPage({
     .sort((a, b) => b.count - a.count)
     .slice(0, 10)
 
+  const windowLabel = days === 1 ? '24 hours' : `${days} days`
+
   return (
-    <div className="op-page">
-      <header className="op-page-head">
+    <div className="op-page op-fade-up">
+      <div className="op-head">
         <div>
-          <div className="op-kicker">Activity</div>
-          <h1 className="op-title">Cross-workspace signals.</h1>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>
+            Activity · cross-workspace
+          </div>
+          <h1 className="op-title">
+            Who&rsquo;s <span className="it">doing what.</span>
+          </h1>
           <p className="op-sub">
-            Read-only. Excludes admin impersonation from aggregates. Retention: 90 days rolling.
+            Read-only. Excludes admin impersonation from aggregates. Retention: 90 days
+            rolling. Current window: last {windowLabel}.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[1, 7, 30].map((d) => (
-            <Link
-              key={d}
-              href={d === 7 ? '/admin/activity' : `/admin/activity?days=${d}`}
-              className={d === days ? 'op-btn op-btn-primary' : 'op-btn'}
-              style={{ fontSize: 12 }}
-            >
-              Last {d}d
-            </Link>
-          ))}
+        <div className="row" style={{ gap: 8 }}>
+          {[1, 7, 30].map((d) => {
+            const isActive = d === days
+            const href = d === 7 ? '/admin/activity' : `/admin/activity?days=${d}`
+            return (
+              <Link
+                key={d}
+                href={href}
+                className={isActive ? 'op-btn primary' : 'op-btn'}
+                style={{ fontSize: 12 }}
+              >
+                Last {d}d
+              </Link>
+            )
+          })}
         </div>
-      </header>
+      </div>
 
-      {/* Hero counts */}
-      <section
-        className="op-grid"
-        style={{
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 14,
-          marginTop: 14,
-        }}
-      >
-        <StatCard kicker="Events" value={totalEvents.toLocaleString()} sub={`last ${days} d`} />
-        <StatCard
-          kicker="Last 24 h"
-          value={last24.toLocaleString()}
-          sub={`${Math.round((last24 / Math.max(1, totalEvents)) * 100)}% of window`}
-        />
-        <StatCard
-          kicker="Active workspaces"
-          value={activeWorkspaces.toLocaleString()}
-          sub="wrote ≥1 event"
-        />
-        <StatCard
-          kicker="Active users"
-          value={activeUsers.toLocaleString()}
-          sub="across all tenants"
-        />
-      </section>
+      {/* Hero stats */}
+      <div className="op-stats" style={{ marginBottom: 18 }}>
+        <div className="op-stat">
+          <div className="k">Events</div>
+          <div className="v">{totalEvents.toLocaleString()}</div>
+          <div className="d flat">last {windowLabel}</div>
+        </div>
+        <div className="op-stat">
+          <div className="k">Last 24 h</div>
+          <div className="v">{last24.toLocaleString()}</div>
+          <div className="d flat">
+            {Math.round((last24 / Math.max(1, totalEvents)) * 100)}% of window
+          </div>
+        </div>
+        <div className="op-stat">
+          <div className="k">Active workspaces</div>
+          <div className="v">{activeWorkspaces.toLocaleString()}</div>
+          <div className="d flat">wrote ≥1 event</div>
+        </div>
+        <div className="op-stat">
+          <div className="k">Active users</div>
+          <div className="v">{activeUsers.toLocaleString()}</div>
+          <div className="d flat">across all tenants</div>
+        </div>
+        <div className="op-stat">
+          <div className="k">Search queries</div>
+          <div className="v">{topSearches.reduce((a, s) => a + s.count, 0).toLocaleString()}</div>
+          <div className="d flat">{topSearches.length} unique</div>
+        </div>
+      </div>
 
       {/* Anomaly strip */}
       {spikes.length > 0 && (
-        <section
-          className="op-card"
-          style={{
-            marginTop: 18,
-            background: 'var(--op-warn-bg, #fff7e6)',
-            borderColor: 'var(--op-warn-line, #f3d588)',
-            padding: 14,
-          }}
-        >
-          <div
-            className="op-kicker"
-            style={{ color: 'var(--op-warn-ink, #8a6d1f)', display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <OpIcon name="audit" size={12} /> Search spikes
+        <div className="op-card" style={{ marginBottom: 18 }}>
+          <div className="op-card-head">
+            <h3>Search spikes</h3>
+            <span className="op-chip warn">
+              <span className="dot"></span>
+              {spikes.length} workspace{spikes.length === 1 ? '' : 's'}
+            </span>
           </div>
-          <div style={{ fontSize: 13, color: 'var(--op-ink-2)', marginTop: 4 }}>
-            Workspaces whose search volume more than doubled vs the previous {days}-day window.
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+          <div className="op-card-body" style={{ padding: '0 18px 12px' }}>
+            <p style={{ color: 'var(--op-ink-3)', fontSize: 12.5, margin: '0 0 12px' }}>
+              Workspaces whose search volume more than doubled vs the previous {windowLabel}
+              window (≥ 10 queries required).
+            </p>
             {spikes.slice(0, 5).map((s) => (
               <Link
                 key={s.id}
                 href={`/admin/workspaces/${s.id}`}
-                className="op-row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr auto auto',
                   gap: 16,
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  background: '#fff',
+                  padding: '10px 0',
+                  borderTop: '1px solid var(--op-line)',
                   fontSize: 13,
+                  color: 'var(--op-ink-1)',
+                  alignItems: 'center',
                 }}
               >
                 <span style={{ fontWeight: 500 }}>{s.workspace?.name ?? s.id}</span>
-                <span className="op-mono" style={{ color: 'var(--op-ink-3)' }}>
+                <span
+                  style={{ color: 'var(--op-ink-3)', fontFamily: 'var(--font-mono)', fontSize: 11.5 }}
+                >
                   {s.previous} → {s.current}
                 </span>
-                <span className="op-mono" style={{ color: 'var(--op-accent)' }}>
+                <span className="op-chip warn" style={{ fontSize: 10 }}>
                   {fmtPct(s.current / s.previous - 1)}
                 </span>
               </Link>
             ))}
           </div>
-        </section>
+        </div>
       )}
 
-      {/* Top workspaces */}
-      <section className="op-card" style={{ marginTop: 18, padding: 0 }}>
-        <header
-          style={{
-            padding: '14px 18px',
-            borderBottom: '1px solid var(--op-line-2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div className="op-kicker">Workspaces</div>
-            <div style={{ fontSize: 14, fontWeight: 500 }}>By activity ({days}d)</div>
-          </div>
-          <div className="op-mono" style={{ fontSize: 11, color: 'var(--op-ink-4)' }}>
-            TOP {rows.length} · Δ VS PRIOR {days}D
-          </div>
-        </header>
-        <table className="op-table">
-          <thead>
-            <tr>
-              <th>Workspace</th>
-              <th>Status</th>
-              <th>Top event</th>
-              <th style={{ textAlign: 'right' }}>Events</th>
-              <th style={{ textAlign: 'right' }}>Δ</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
+      {/* Top workspaces table */}
+      <div className="op-card" style={{ padding: 0, marginBottom: 18 }}>
+        <div className="op-card-head">
+          <h3>Top workspaces by activity</h3>
+          <span
+            className="eyebrow"
+            style={{ fontSize: 9.5, color: 'var(--op-ink-4)' }}
+          >
+            Top {rows.length} · Δ vs prior {days}d
+          </span>
+        </div>
+        <div className="op-t-wrap">
+          <table className="op-t">
+            <thead>
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: 24, color: 'var(--op-ink-4)' }}>
-                  No events logged in this window yet.
-                </td>
+                <th>Workspace</th>
+                <th>Status</th>
+                <th>Top event</th>
+                <th style={{ textAlign: 'right' }}>Events</th>
+                <th style={{ textAlign: 'right' }}>Δ</th>
+                <th style={{ width: 120, textAlign: 'right' }}></th>
               </tr>
-            )}
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td>
-                  <Link href={`/admin/workspaces/${r.id}`} style={{ fontWeight: 500 }}>
-                    {r.workspace?.name ?? r.id}
-                  </Link>
-                  {r.workspace?.slug && (
-                    <div
-                      className="op-mono"
-                      style={{ fontSize: 11, color: 'var(--op-ink-4)', marginTop: 2 }}
-                    >
-                      {r.workspace.slug}
-                    </div>
-                  )}
-                </td>
-                <td>
-                  <span className="op-pill" style={{ fontSize: 11 }}>
-                    {r.workspace?.subscription_status ?? '—'}
-                  </span>
-                </td>
-                <td
-                  className="op-mono"
-                  style={{ fontSize: 11.5, color: 'var(--op-ink-3)' }}
-                >
-                  {r.topKind ?? '—'}
-                </td>
-                <td className="op-mono" style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {r.total.toLocaleString()}
-                </td>
-                <td
-                  className="op-mono"
-                  style={{
-                    textAlign: 'right',
-                    color:
-                      r.delta == null
-                        ? 'var(--op-ink-4)'
-                        : r.delta >= 0
-                        ? 'var(--op-accent)'
-                        : 'var(--op-ink-2)',
-                  }}
-                >
-                  {r.delta == null ? 'new' : fmtPct(r.delta)}
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <Link
-                    href={`/admin/impersonate/start?workspace_id=${r.id}`}
-                    className="op-btn"
-                    style={{ fontSize: 11 }}
-                  >
-                    Impersonate
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="op-empty">
+                    No events logged in this window yet.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((r) => {
+                  const statusTone =
+                    r.workspace?.subscription_status === 'active'
+                      ? 'ok'
+                      : r.workspace?.subscription_status === 'gifted'
+                        ? 'accent'
+                        : r.workspace?.subscription_status === 'trialing'
+                          ? 'info'
+                          : r.workspace?.subscription_status === 'past_due'
+                            ? 'crit'
+                            : 'warn'
+                  return (
+                    <tr key={r.id}>
+                      <td>
+                        <Link
+                          href={`/admin/workspaces/${r.id}`}
+                          style={{ fontWeight: 500, color: 'var(--op-ink-1)' }}
+                        >
+                          {r.workspace?.name ?? r.id}
+                        </Link>
+                        {r.workspace?.slug && (
+                          <div
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: 10.5,
+                              color: 'var(--op-ink-4)',
+                              marginTop: 3,
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            {r.workspace.slug}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`op-chip ${statusTone}`} style={{ fontSize: 10.5 }}>
+                          {r.workspace?.subscription_status ?? '—'}
+                        </span>
+                      </td>
+                      <td
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 11.5,
+                          color: 'var(--op-ink-3)',
+                        }}
+                      >
+                        {r.topKind ?? '—'}
+                      </td>
+                      <td
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          textAlign: 'right',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}
+                      >
+                        {r.total.toLocaleString()}
+                      </td>
+                      <td
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          textAlign: 'right',
+                          fontVariantNumeric: 'tabular-nums',
+                          color:
+                            r.delta == null
+                              ? 'var(--op-ink-4)'
+                              : r.delta >= 0
+                                ? 'var(--op-ok)'
+                                : 'var(--op-ink-3)',
+                        }}
+                      >
+                        {r.delta == null ? 'new' : fmtPct(r.delta)}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <Link
+                          href={`/admin/workspaces/${r.id}`}
+                          className="op-btn sm ghost"
+                          style={{ fontSize: 11 }}
+                        >
+                          View
+                          <OpIcon name="chevron" size={10} />
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Top searches cross-tenant */}
-      <section className="op-card" style={{ marginTop: 18, padding: 0 }}>
-        <header
-          style={{
-            padding: '14px 18px',
-            borderBottom: '1px solid var(--op-line-2)',
-          }}
-        >
-          <div className="op-kicker">Searches</div>
-          <div style={{ fontSize: 14, fontWeight: 500 }}>Top queries (all tenants)</div>
-          <div style={{ fontSize: 12, color: 'var(--op-ink-4)', marginTop: 4 }}>
-            Counts only — workspace attribution intentionally hidden. Use the per-workspace
-            activity view for detail.
-          </div>
-        </header>
-        <table className="op-table">
-          <thead>
-            <tr>
-              <th>Query</th>
-              <th style={{ textAlign: 'right' }}>Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topSearches.length === 0 && (
+      <div className="op-card" style={{ padding: 0 }}>
+        <div className="op-card-head">
+          <h3>Top queries · all tenants</h3>
+          <span
+            className="eyebrow"
+            style={{ fontSize: 9.5, color: 'var(--op-ink-4)' }}
+          >
+            Attribution hidden
+          </span>
+        </div>
+        <div className="op-card-body" style={{ padding: '0 18px 6px' }}>
+          <p style={{ color: 'var(--op-ink-3)', fontSize: 12, margin: '0 0 12px' }}>
+            Counts only — workspace attribution intentionally hidden here. Drill into a
+            single workspace for per-query detail.
+          </p>
+        </div>
+        <div className="op-t-wrap">
+          <table className="op-t">
+            <thead>
               <tr>
-                <td colSpan={2} style={{ textAlign: 'center', padding: 24, color: 'var(--op-ink-4)' }}>
-                  No searches in this window.
-                </td>
+                <th>Query</th>
+                <th style={{ textAlign: 'right', width: 120 }}>Count</th>
               </tr>
-            )}
-            {topSearches.map((s) => (
-              <tr key={s.q}>
-                <td style={{ fontStyle: 'italic' }}>&ldquo;{s.q}&rdquo;</td>
-                <td
-                  className="op-mono"
-                  style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
-                >
-                  {s.count}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </div>
-  )
-}
-
-function StatCard({
-  kicker,
-  value,
-  sub,
-}: {
-  kicker: string
-  value: string | number
-  sub?: string
-}) {
-  return (
-    <div className="op-card" style={{ padding: 16 }}>
-      <div className="op-kicker">{kicker}</div>
-      <div style={{ fontSize: 28, fontWeight: 600, marginTop: 6, letterSpacing: '-0.01em' }}>
-        {value}
+            </thead>
+            <tbody>
+              {topSearches.length === 0 ? (
+                <tr>
+                  <td colSpan={2} className="op-empty">
+                    No searches in this window.
+                  </td>
+                </tr>
+              ) : (
+                topSearches.map((s) => (
+                  <tr key={s.q}>
+                    <td style={{ fontStyle: 'italic' }}>&ldquo;{s.q}&rdquo;</td>
+                    <td
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        textAlign: 'right',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {s.count.toLocaleString()}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-      {sub && <div style={{ fontSize: 11.5, color: 'var(--op-ink-4)', marginTop: 4 }}>{sub}</div>}
     </div>
   )
 }
