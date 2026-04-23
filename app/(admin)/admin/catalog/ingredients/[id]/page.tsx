@@ -2,7 +2,11 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OpIcon } from '@/components/admin/Icon'
-import { updateIngredientAction, deleteIngredientAction } from './actions'
+import {
+  updateIngredientAction,
+  deleteIngredientAction,
+  mergeIngredientAction,
+} from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +38,7 @@ export default async function AdminIngredientEditPage({ params, searchParams }: 
 
   const admin = createAdminClient()
 
-  const [{ data: ingRow }, { data: refRows }] = await Promise.all([
+  const [{ data: ingRow }, { data: refRows }, { data: allIngredients }] = await Promise.all([
     admin
       .from('global_ingredients')
       .select('id, name, category, default_unit, allergens, created_at')
@@ -45,10 +49,21 @@ export default async function AdminIngredientEditPage({ params, searchParams }: 
       .select('cocktail_id, cocktails(id, name, slug, workspace_id, workspaces(id, name, slug))')
       .eq('global_ingredient_id', id)
       .limit(200),
+    admin
+      .from('global_ingredients')
+      .select('id, name, category')
+      .neq('id', id)
+      .order('name')
+      .limit(2000),
   ])
 
   const ingredient = ingRow as Ingredient | null
   if (!ingredient) notFound()
+  const mergeCandidates = (allIngredients ?? []) as {
+    id: string
+    name: string
+    category: string | null
+  }[]
 
   // Dedupe cocktails — same cocktail can reference the ingredient multiple times.
   const seen = new Set<string>()
@@ -228,6 +243,37 @@ export default async function AdminIngredientEditPage({ params, searchParams }: 
               )}
             </div>
           </div>
+
+          <form action={mergeIngredientAction} className="op-card" style={{ padding: 16 }}>
+            <input type="hidden" name="source_id" value={ingredient.id} />
+            <div className="eyebrow" style={{ marginBottom: 6 }}>
+              Merge into
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--op-ink-3)', marginBottom: 10 }}>
+              Re-points every cocktail recipe line from this ingredient to the target, then
+              deletes this row. Irreversible.
+            </div>
+            <select
+              name="target_id"
+              defaultValue=""
+              className="op-input"
+              required
+              style={{ marginBottom: 10 }}
+            >
+              <option value="" disabled>
+                Pick a canonical ingredient…
+              </option>
+              {mergeCandidates.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.category ? ` (${c.category})` : ''}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="op-btn" style={{ width: '100%' }} formNoValidate>
+              Merge &amp; delete this row
+            </button>
+          </form>
 
           <form action={deleteIngredientAction} className="op-card" style={{ padding: 16 }}>
             <input type="hidden" name="id" value={ingredient.id} />

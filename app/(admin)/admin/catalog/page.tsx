@@ -11,9 +11,14 @@ type SearchParams = {
   q?: string
   cat?: string
   sub?: string
+  sort?: string
+  unused?: string
+  incomplete?: string
   action?: string
   reason?: string
 }
+
+type SortKey = 'name' | 'name_desc' | 'used' | 'used_desc'
 
 type Suggestion = {
   id: string
@@ -76,6 +81,12 @@ export default async function AdminCatalogPage({
   const q = (sp.q ?? '').trim()
   const catFilter = (sp.cat ?? '').trim()
   const sub = sp.sub && SUB_STATUS[sp.sub] ? sp.sub : 'pending'
+  const sort: SortKey =
+    sp.sort === 'name_desc' || sp.sort === 'used' || sp.sort === 'used_desc'
+      ? (sp.sort as SortKey)
+      : 'name'
+  const unusedOnly = sp.unused === '1'
+  const incompleteOnly = sp.incomplete === '1'
 
   const admin = createAdminClient()
 
@@ -115,6 +126,20 @@ export default async function AdminCatalogPage({
             Every product and ingredient shared across tenants lives here. Edit / delete the
             canonical rows, and moderate workspace suggestions before they land.
           </p>
+        </div>
+        <div className="row" style={{ gap: 8 }}>
+          {tab === 'products' && (
+            <Link href="/admin/catalog/products/new" className="op-btn primary">
+              <OpIcon name="plus" size={12} />
+              New product
+            </Link>
+          )}
+          {tab === 'ingredients' && (
+            <Link href="/admin/catalog/ingredients/new" className="op-btn primary">
+              <OpIcon name="plus" size={12} />
+              New ingredient
+            </Link>
+          )}
         </div>
       </div>
 
@@ -175,10 +200,24 @@ export default async function AdminCatalogPage({
       </div>
 
       {tab === 'products' && (
-        <ProductsTab q={q} catFilter={catFilter} totalCount={productCount ?? 0} />
+        <ProductsTab
+          q={q}
+          catFilter={catFilter}
+          sort={sort}
+          unusedOnly={unusedOnly}
+          incompleteOnly={incompleteOnly}
+          totalCount={productCount ?? 0}
+        />
       )}
       {tab === 'ingredients' && (
-        <IngredientsTab q={q} catFilter={catFilter} totalCount={ingredientCount ?? 0} />
+        <IngredientsTab
+          q={q}
+          catFilter={catFilter}
+          sort={sort}
+          unusedOnly={unusedOnly}
+          incompleteOnly={incompleteOnly}
+          totalCount={ingredientCount ?? 0}
+        />
       )}
       {tab === 'suggestions' && (
         <SuggestionsTab sub={sub} counts={{ pendingCount, approvedWeekCount, rejectedCount }} />
@@ -192,16 +231,20 @@ export default async function AdminCatalogPage({
 async function ProductsTab({
   q,
   catFilter,
+  sort,
+  unusedOnly,
+  incompleteOnly,
   totalCount,
 }: {
   q: string
   catFilter: string
+  sort: SortKey
+  unusedOnly: boolean
+  incompleteOnly: boolean
   totalCount: number
 }) {
   const admin = createAdminClient()
 
-  // Fetch products + usage counts. With 31 products + ~1k cocktails this is
-  // fine to do in-memory; if the catalog grows we'd swap for a view.
   const [{ data: productRows }, { data: cocktailRows }] = await Promise.all([
     admin
       .from('global_products')
@@ -223,12 +266,28 @@ async function ProductsTab({
     new Set(products.map((p) => p.category ?? '').filter(Boolean)),
   ).sort() as string[]
 
+  function isIncomplete(p: GlobalProduct): boolean {
+    return !p.image_url || p.abv == null || !p.origin
+  }
+
   const filtered = products.filter((p) => {
     if (catFilter && p.category !== catFilter) return false
+    if (unusedOnly && (usage.get(p.id) ?? 0) > 0) return false
+    if (incompleteOnly && !isIncomplete(p)) return false
     if (!q) return true
     const hay = `${p.brand} ${p.expression} ${p.origin ?? ''}`.toLowerCase()
     return hay.includes(q.toLowerCase())
   })
+
+  filtered.sort((a, b) => {
+    if (sort === 'name_desc') return `${b.brand} ${b.expression}`.localeCompare(`${a.brand} ${a.expression}`)
+    if (sort === 'used_desc') return (usage.get(b.id) ?? 0) - (usage.get(a.id) ?? 0)
+    if (sort === 'used') return (usage.get(a.id) ?? 0) - (usage.get(b.id) ?? 0)
+    return `${a.brand} ${a.expression}`.localeCompare(`${b.brand} ${b.expression}`)
+  })
+
+  const incompleteCount = products.filter(isIncomplete).length
+  const unusedCount = products.filter((p) => (usage.get(p.id) ?? 0) === 0).length
 
   return (
     <>
@@ -240,6 +299,11 @@ async function ProductsTab({
         basePath="/admin/catalog"
         resultCount={filtered.length}
         totalCount={totalCount}
+        sort={sort}
+        unusedOnly={unusedOnly}
+        incompleteOnly={incompleteOnly}
+        unusedCount={unusedCount}
+        incompleteCount={incompleteCount}
       />
 
       <div className="op-card" style={{ padding: 0 }}>
@@ -247,11 +311,27 @@ async function ProductsTab({
           <table className="op-t">
             <thead>
               <tr>
-                <th>Product</th>
+                <SortHeader
+                  label="Product"
+                  sort={sort}
+                  asc="name"
+                  desc="name_desc"
+                  basePath="/admin/catalog"
+                  keepParams={{ q, cat: catFilter, unused: unusedOnly, incomplete: incompleteOnly }}
+                />
                 <th>Category</th>
                 <th style={{ textAlign: 'right', width: 70 }}>ABV</th>
                 <th>Origin</th>
-                <th style={{ textAlign: 'right', width: 100 }}>Used by</th>
+                <SortHeader
+                  label="Used by"
+                  sort={sort}
+                  asc="used"
+                  desc="used_desc"
+                  align="right"
+                  width={110}
+                  basePath="/admin/catalog"
+                  keepParams={{ q, cat: catFilter, unused: unusedOnly, incomplete: incompleteOnly }}
+                />
                 <th style={{ width: 100, textAlign: 'right' }}></th>
               </tr>
             </thead>
@@ -265,22 +345,31 @@ async function ProductsTab({
               ) : (
                 filtered.map((p) => {
                   const used = usage.get(p.id) ?? 0
+                  const incomplete = isIncomplete(p)
                   return (
                     <tr key={p.id}>
                       <td>
                         <Link
                           href={`/admin/catalog/products/${p.id}`}
-                          style={{ color: 'var(--op-ink-1)' }}
+                          style={{
+                            color: 'var(--op-ink-1)',
+                            display: 'flex',
+                            gap: 10,
+                            alignItems: 'flex-start',
+                          }}
                         >
-                          <div style={{ fontWeight: 500 }}>{p.brand}</div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: 'var(--op-ink-3)',
-                              marginTop: 2,
-                            }}
-                          >
-                            {p.expression}
+                          {incomplete && <IncompleteDot missing={missingLabels(p)} />}
+                          <div>
+                            <div style={{ fontWeight: 500 }}>{p.brand}</div>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: 'var(--op-ink-3)',
+                                marginTop: 2,
+                              }}
+                            >
+                              {p.expression}
+                            </div>
                           </div>
                         </Link>
                       </td>
@@ -337,15 +426,29 @@ async function ProductsTab({
   )
 }
 
+function missingLabels(p: GlobalProduct): string[] {
+  const list: string[] = []
+  if (!p.image_url) list.push('image')
+  if (p.abv == null) list.push('ABV')
+  if (!p.origin) list.push('origin')
+  return list
+}
+
 // ─── Ingredients tab ──────────────────────────────────────────────────
 
 async function IngredientsTab({
   q,
   catFilter,
+  sort,
+  unusedOnly,
+  incompleteOnly,
   totalCount,
 }: {
   q: string
   catFilter: string
+  sort: SortKey
+  unusedOnly: boolean
+  incompleteOnly: boolean
   totalCount: number
 }) {
   const admin = createAdminClient()
@@ -363,8 +466,6 @@ async function IngredientsTab({
   ])
 
   const ingredients = (ingredientRows ?? []) as GlobalIngredient[]
-  // Count distinct cocktails per ingredient — an ingredient used twice in
-  // the same recipe still counts once.
   const usage = new Map<string, Set<string>>()
   for (const l of (linkRows ?? []) as {
     cocktail_id: string
@@ -380,11 +481,27 @@ async function IngredientsTab({
     new Set(ingredients.map((i) => i.category ?? '').filter(Boolean)),
   ).sort() as string[]
 
+  function isIncomplete(i: GlobalIngredient): boolean {
+    return !i.category
+  }
+
   const filtered = ingredients.filter((i) => {
     if (catFilter && i.category !== catFilter) return false
+    if (unusedOnly && (usage.get(i.id)?.size ?? 0) > 0) return false
+    if (incompleteOnly && !isIncomplete(i)) return false
     if (!q) return true
     return i.name.toLowerCase().includes(q.toLowerCase())
   })
+
+  filtered.sort((a, b) => {
+    if (sort === 'name_desc') return b.name.localeCompare(a.name)
+    if (sort === 'used_desc') return (usage.get(b.id)?.size ?? 0) - (usage.get(a.id)?.size ?? 0)
+    if (sort === 'used') return (usage.get(a.id)?.size ?? 0) - (usage.get(b.id)?.size ?? 0)
+    return a.name.localeCompare(b.name)
+  })
+
+  const incompleteCount = ingredients.filter(isIncomplete).length
+  const unusedCount = ingredients.filter((i) => (usage.get(i.id)?.size ?? 0) === 0).length
 
   return (
     <>
@@ -396,6 +513,11 @@ async function IngredientsTab({
         basePath="/admin/catalog?tab=ingredients"
         resultCount={filtered.length}
         totalCount={totalCount}
+        sort={sort}
+        unusedOnly={unusedOnly}
+        incompleteOnly={incompleteOnly}
+        unusedCount={unusedCount}
+        incompleteCount={incompleteCount}
       />
 
       <div className="op-card" style={{ padding: 0 }}>
@@ -403,10 +525,26 @@ async function IngredientsTab({
           <table className="op-t">
             <thead>
               <tr>
-                <th>Ingredient</th>
+                <SortHeader
+                  label="Ingredient"
+                  sort={sort}
+                  asc="name"
+                  desc="name_desc"
+                  basePath="/admin/catalog?tab=ingredients"
+                  keepParams={{ q, cat: catFilter, unused: unusedOnly, incomplete: incompleteOnly }}
+                />
                 <th>Category</th>
                 <th style={{ width: 100 }}>Default unit</th>
-                <th style={{ textAlign: 'right', width: 100 }}>Used by</th>
+                <SortHeader
+                  label="Used by"
+                  sort={sort}
+                  asc="used"
+                  desc="used_desc"
+                  align="right"
+                  width={110}
+                  basePath="/admin/catalog?tab=ingredients"
+                  keepParams={{ q, cat: catFilter, unused: unusedOnly, incomplete: incompleteOnly }}
+                />
                 <th style={{ width: 100, textAlign: 'right' }}></th>
               </tr>
             </thead>
@@ -420,14 +558,22 @@ async function IngredientsTab({
               ) : (
                 filtered.map((ing) => {
                   const used = usage.get(ing.id)?.size ?? 0
+                  const incomplete = isIncomplete(ing)
                   return (
                     <tr key={ing.id}>
                       <td>
                         <Link
                           href={`/admin/catalog/ingredients/${ing.id}`}
-                          style={{ color: 'var(--op-ink-1)', fontWeight: 500 }}
+                          style={{
+                            color: 'var(--op-ink-1)',
+                            fontWeight: 500,
+                            display: 'flex',
+                            gap: 8,
+                            alignItems: 'center',
+                          }}
                         >
-                          {ing.name}
+                          {incomplete && <IncompleteDot missing={['category']} />}
+                          <span>{ing.name}</span>
                         </Link>
                       </td>
                       <td
@@ -662,6 +808,11 @@ function CatalogFilters({
   basePath,
   resultCount,
   totalCount,
+  sort,
+  unusedOnly,
+  incompleteOnly,
+  unusedCount,
+  incompleteCount,
 }: {
   placeholder: string
   defaultQuery: string
@@ -670,96 +821,278 @@ function CatalogFilters({
   basePath: string
   resultCount: number
   totalCount: number
+  sort: SortKey
+  unusedOnly: boolean
+  incompleteOnly: boolean
+  unusedCount: number
+  incompleteCount: number
 }) {
-  const joiner = basePath.includes('?') ? '&' : '?'
+  const isIngredients = basePath.includes('tab=ingredients')
   return (
-    <form
-      method="GET"
-      action={basePath.split('?')[0]!}
+    <div
       className="op-card"
       style={{
         padding: 12,
         marginBottom: 14,
         display: 'flex',
-        alignItems: 'center',
-        gap: 12,
+        flexDirection: 'column',
+        gap: 10,
       }}
     >
-      {basePath.includes('tab=ingredients') && (
-        <input type="hidden" name="tab" value="ingredients" />
-      )}
-      <div style={{ position: 'relative', flex: 1 }}>
-        <OpIcon
-          name="search"
-          size={13}
+      <form
+        method="GET"
+        action={basePath.split('?')[0]!}
+        style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+      >
+        {isIngredients && <input type="hidden" name="tab" value="ingredients" />}
+        {sort !== 'name' && <input type="hidden" name="sort" value={sort} />}
+        {unusedOnly && <input type="hidden" name="unused" value="1" />}
+        {incompleteOnly && <input type="hidden" name="incomplete" value="1" />}
+        <div style={{ position: 'relative', flex: 1 }}>
+          <OpIcon
+            name="search"
+            size={13}
+            style={{
+              position: 'absolute',
+              left: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--op-ink-4)',
+            }}
+          />
+          <input
+            type="text"
+            name="q"
+            defaultValue={defaultQuery}
+            placeholder={placeholder}
+            style={{
+              width: '100%',
+              padding: '9px 12px 9px 34px',
+              background: 'var(--op-surface)',
+              border: '1px solid var(--op-line)',
+              borderRadius: 8,
+              color: 'var(--op-ink-1)',
+              fontSize: 13,
+              outline: 'none',
+            }}
+          />
+        </div>
+        <select
+          name="cat"
+          defaultValue={currentCat}
           style={{
-            position: 'absolute',
-            left: 12,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--op-ink-4)',
-          }}
-        />
-        <input
-          type="text"
-          name="q"
-          defaultValue={defaultQuery}
-          placeholder={placeholder}
-          style={{
-            width: '100%',
-            padding: '9px 12px 9px 34px',
+            padding: '8px 28px 8px 12px',
             background: 'var(--op-surface)',
             border: '1px solid var(--op-line)',
             borderRadius: 8,
             color: 'var(--op-ink-1)',
-            fontSize: 13,
-            outline: 'none',
+            fontSize: 12.5,
+            minWidth: 160,
           }}
+        >
+          <option value="">All categories</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <button type="submit" className="op-btn primary" style={{ fontSize: 12 }}>
+          Apply
+        </button>
+        {(defaultQuery || currentCat) && (
+          <Link
+            href={buildListHref(basePath, {
+              sort: sort === 'name' ? undefined : sort,
+              unused: unusedOnly ? '1' : undefined,
+              incomplete: incompleteOnly ? '1' : undefined,
+            })}
+            className="op-btn ghost"
+            style={{ fontSize: 12 }}
+          >
+            Clear
+          </Link>
+        )}
+        <div
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            color: 'var(--op-ink-4)',
+            marginLeft: 'auto',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {resultCount.toLocaleString()} / {totalCount.toLocaleString()}
+        </div>
+      </form>
+
+      {/* Quick filter toggles */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <FilterToggle
+          active={unusedOnly}
+          label={`Unused only (${unusedCount})`}
+          onHref={buildListHref(basePath, {
+            q: defaultQuery,
+            cat: currentCat,
+            sort: sort === 'name' ? undefined : sort,
+            unused: '1',
+            incomplete: incompleteOnly ? '1' : undefined,
+          })}
+          offHref={buildListHref(basePath, {
+            q: defaultQuery,
+            cat: currentCat,
+            sort: sort === 'name' ? undefined : sort,
+            incomplete: incompleteOnly ? '1' : undefined,
+          })}
         />
+        <FilterToggle
+          active={incompleteOnly}
+          label={`Incomplete only (${incompleteCount})`}
+          onHref={buildListHref(basePath, {
+            q: defaultQuery,
+            cat: currentCat,
+            sort: sort === 'name' ? undefined : sort,
+            unused: unusedOnly ? '1' : undefined,
+            incomplete: '1',
+          })}
+          offHref={buildListHref(basePath, {
+            q: defaultQuery,
+            cat: currentCat,
+            sort: sort === 'name' ? undefined : sort,
+            unused: unusedOnly ? '1' : undefined,
+          })}
+        />
+        {sort !== 'name' && (
+          <Link
+            href={buildListHref(basePath, {
+              q: defaultQuery,
+              cat: currentCat,
+              unused: unusedOnly ? '1' : undefined,
+              incomplete: incompleteOnly ? '1' : undefined,
+            })}
+            className="op-btn ghost sm"
+            style={{ fontSize: 11 }}
+          >
+            Reset sort ({sortLabel(sort)})
+          </Link>
+        )}
       </div>
-      <select
-        name="cat"
-        defaultValue={currentCat}
-        style={{
-          padding: '8px 28px 8px 12px',
-          background: 'var(--op-surface)',
-          border: '1px solid var(--op-line)',
-          borderRadius: 8,
-          color: 'var(--op-ink-1)',
-          fontSize: 12.5,
-          minWidth: 160,
-        }}
-      >
-        <option value="">All categories</option>
-        {categories.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-      </select>
-      <button type="submit" className="op-btn primary" style={{ fontSize: 12 }}>
-        Apply
-      </button>
-      {(defaultQuery || currentCat) && (
-        <Link href={basePath} className="op-btn ghost" style={{ fontSize: 12 }}>
-          Clear
-        </Link>
-      )}
-      <div
-        className="mut"
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-          color: 'var(--op-ink-4)',
-          marginLeft: 'auto',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {resultCount.toLocaleString()} / {totalCount.toLocaleString()}
-        {joiner && ''}
-      </div>
-    </form>
+    </div>
   )
+}
+
+function FilterToggle({
+  active,
+  label,
+  onHref,
+  offHref,
+}: {
+  active: boolean
+  label: string
+  onHref: string
+  offHref: string
+}) {
+  return (
+    <Link
+      href={active ? offHref : onHref}
+      className="op-chip"
+      style={{
+        fontSize: 11.5,
+        padding: '5px 10px',
+        background: active ? 'var(--op-accent-w)' : 'transparent',
+        color: active ? 'var(--op-accent)' : 'var(--op-ink-3)',
+        border: `1px solid ${active ? 'var(--op-accent-w)' : 'var(--op-line)'}`,
+        cursor: 'pointer',
+      }}
+    >
+      {active && <OpIcon name="check" size={11} />}
+      {label}
+    </Link>
+  )
+}
+
+function SortHeader({
+  label,
+  sort,
+  asc,
+  desc,
+  align,
+  width,
+  basePath,
+  keepParams,
+}: {
+  label: string
+  sort: SortKey
+  asc: SortKey
+  desc: SortKey
+  align?: 'right'
+  width?: number
+  basePath: string
+  keepParams: { q: string; cat: string; unused: boolean; incomplete: boolean }
+}) {
+  const isActive = sort === asc || sort === desc
+  const next = sort === asc ? desc : asc
+  const href = buildListHref(basePath, {
+    q: keepParams.q,
+    cat: keepParams.cat,
+    sort: next === 'name' ? undefined : next,
+    unused: keepParams.unused ? '1' : undefined,
+    incomplete: keepParams.incomplete ? '1' : undefined,
+  })
+  const arrow = !isActive ? '' : sort === desc ? ' ↓' : ' ↑'
+  return (
+    <th style={{ textAlign: align, width }}>
+      <Link
+        href={href}
+        style={{
+          color: isActive ? 'var(--op-ink-1)' : 'var(--op-ink-3)',
+          textDecoration: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        {label}
+        {arrow}
+      </Link>
+    </th>
+  )
+}
+
+function IncompleteDot({ missing }: { missing: string[] }) {
+  return (
+    <span
+      title={`Missing: ${missing.join(', ')}`}
+      aria-label={`Incomplete — missing ${missing.join(', ')}`}
+      style={{
+        width: 7,
+        height: 7,
+        borderRadius: 999,
+        background: 'var(--op-warn)',
+        marginTop: 7,
+        flexShrink: 0,
+      }}
+    />
+  )
+}
+
+function sortLabel(s: SortKey): string {
+  if (s === 'name_desc') return 'Z → A'
+  if (s === 'used') return 'Least used'
+  if (s === 'used_desc') return 'Most used'
+  return 'A → Z'
+}
+
+function buildListHref(
+  basePath: string,
+  params: Record<string, string | undefined>,
+): string {
+  const [path, existingQuery] = basePath.split('?')
+  const sp = new URLSearchParams(existingQuery ?? '')
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === '') continue
+    sp.set(k, v)
+  }
+  const qs = sp.toString()
+  return qs ? `${path}?${qs}` : path!
 }
 
 // ─── Action toast (kept from original) ────────────────────────────────

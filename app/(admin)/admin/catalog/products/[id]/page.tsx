@@ -2,7 +2,11 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OpIcon } from '@/components/admin/Icon'
-import { updateProductAction, deleteProductAction } from './actions'
+import {
+  updateProductAction,
+  deleteProductAction,
+  mergeProductAction,
+} from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,30 +55,44 @@ export default async function AdminProductEditPage({ params, searchParams }: Pro
 
   const admin = createAdminClient()
 
-  const [{ data: productRow }, { data: cocktailRows }, { data: stockRows }] = await Promise.all([
-    admin
-      .from('global_products')
-      .select(
-        'id, brand, expression, category, abv, origin, tagline, description, tasting_notes, volume_ml, image_url, color_hex, suggested_cost_cents, suggested_price_cents, created_at',
-      )
-      .eq('id', id)
-      .maybeSingle(),
-    admin
-      .from('cocktails')
-      .select('id, name, slug, workspace_id, workspaces(id, name, slug)')
-      .eq('base_product_id', id)
-      .limit(100),
-    admin
-      .from('workspace_products')
-      .select('id, workspace_id, stock, par, workspaces(id, name, slug)')
-      .eq('global_product_id', id)
-      .limit(100),
-  ])
+  const [{ data: productRow }, { data: cocktailRows }, { data: stockRows }, { data: allProducts }] =
+    await Promise.all([
+      admin
+        .from('global_products')
+        .select(
+          'id, brand, expression, category, abv, origin, tagline, description, tasting_notes, volume_ml, image_url, color_hex, suggested_cost_cents, suggested_price_cents, created_at',
+        )
+        .eq('id', id)
+        .maybeSingle(),
+      admin
+        .from('cocktails')
+        .select('id, name, slug, workspace_id, workspaces(id, name, slug)')
+        .eq('base_product_id', id)
+        .limit(100),
+      admin
+        .from('workspace_products')
+        .select('id, workspace_id, stock, par, workspaces(id, name, slug)')
+        .eq('global_product_id', id)
+        .limit(100),
+      admin
+        .from('global_products')
+        .select('id, brand, expression, category')
+        .neq('id', id)
+        .order('brand')
+        .order('expression')
+        .limit(1000),
+    ])
 
   const product = productRow as Product | null
   if (!product) notFound()
   const cocktails = (cocktailRows ?? []) as unknown as CocktailRef[]
   const stocks = (stockRows ?? []) as unknown as WorkspaceStock[]
+  const mergeCandidates = (allProducts ?? []) as {
+    id: string
+    brand: string
+    expression: string
+    category: string | null
+  }[]
 
   const usageTotal = cocktails.length + stocks.length
   const canDelete = usageTotal === 0
@@ -379,6 +397,43 @@ export default async function AdminProductEditPage({ params, searchParams }: Pro
               )}
             </div>
           </div>
+
+          {/* Merge into another */}
+          <form action={mergeProductAction} className="op-card" style={{ padding: 16 }}>
+            <input type="hidden" name="source_id" value={product.id} />
+            <div className="eyebrow" style={{ marginBottom: 6 }}>
+              Merge into
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--op-ink-3)', marginBottom: 10 }}>
+              Re-points every cocktail, recipe line, and workspace stock from this product to
+              the target, then deletes this row. Irreversible.
+            </div>
+            <select
+              name="target_id"
+              defaultValue=""
+              className="op-input"
+              required
+              style={{ marginBottom: 10 }}
+            >
+              <option value="" disabled>
+                Pick a canonical product…
+              </option>
+              {mergeCandidates.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.brand} · {c.expression}
+                  {c.category ? ` (${c.category})` : ''}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="op-btn"
+              style={{ width: '100%' }}
+              formNoValidate
+            >
+              Merge &amp; delete this row
+            </button>
+          </form>
 
           {/* Danger zone */}
           <form action={deleteProductAction} className="op-card" style={{ padding: 16 }}>

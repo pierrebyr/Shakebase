@@ -62,6 +62,55 @@ export async function updateIngredientAction(formData: FormData): Promise<void> 
   redirect(`/admin/catalog/ingredients/${id}?saved=1`)
 }
 
+export async function mergeIngredientAction(formData: FormData): Promise<void> {
+  const sourceId = String(formData.get('source_id') ?? '')
+  const targetId = String(formData.get('target_id') ?? '')
+  if (!sourceId || !targetId) {
+    redirect('/admin/catalog?tab=ingredients&action=ingredient_saved_err&reason=missing_target')
+  }
+  if (sourceId === targetId) {
+    redirect(`/admin/catalog/ingredients/${sourceId}?saved=0`)
+  }
+
+  const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = admin as any
+
+  const [{ data: src }, { data: tgt }] = await Promise.all([
+    db.from('global_ingredients').select('id').eq('id', sourceId).maybeSingle(),
+    db.from('global_ingredients').select('id').eq('id', targetId).maybeSingle(),
+  ])
+  if (!src || !tgt) {
+    redirect('/admin/catalog?tab=ingredients&action=ingredient_saved_err&reason=target_not_found')
+  }
+
+  // Re-point every recipe reference. cocktail_ingredients has no uniqueness
+  // constraint across the same cocktail, so duplicate rows (same recipe,
+  // both source and target listed) are allowed — the UI will show the
+  // ingredient twice until an editor cleans it up.
+  const { error: updateErr } = await db
+    .from('cocktail_ingredients')
+    .update({ global_ingredient_id: targetId })
+    .eq('global_ingredient_id', sourceId)
+
+  if (updateErr) {
+    redirect(
+      `/admin/catalog/ingredients/${sourceId}?saved=0&err=${encodeURIComponent(updateErr.message)}`,
+    )
+  }
+
+  const { error: deleteErr } = await db.from('global_ingredients').delete().eq('id', sourceId)
+  if (deleteErr) {
+    redirect(
+      `/admin/catalog/ingredients/${sourceId}?saved=0&err=${encodeURIComponent(deleteErr.message)}`,
+    )
+  }
+
+  revalidatePath('/admin/catalog')
+  revalidatePath(`/admin/catalog/ingredients/${targetId}`)
+  redirect(`/admin/catalog/ingredients/${targetId}?saved=1`)
+}
+
 export async function deleteIngredientAction(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '')
   if (!id) redirect('/admin/catalog?tab=ingredients&action=ingredient_deleted_err&reason=missing_name')

@@ -89,6 +89,81 @@ export async function updateProductAction(formData: FormData): Promise<void> {
   redirect(`/admin/catalog/products/${id}?saved=1`)
 }
 
+export async function mergeProductAction(formData: FormData): Promise<void> {
+  const sourceId = String(formData.get('source_id') ?? '')
+  const targetId = String(formData.get('target_id') ?? '')
+  if (!sourceId || !targetId) {
+    redirect('/admin/catalog?action=product_saved_err&reason=missing_target')
+  }
+  if (sourceId === targetId) {
+    redirect(`/admin/catalog/products/${sourceId}?saved=0`)
+  }
+
+  const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = admin as any
+
+  // Verify both exist.
+  const [{ data: src }, { data: tgt }] = await Promise.all([
+    db.from('global_products').select('id').eq('id', sourceId).maybeSingle(),
+    db.from('global_products').select('id').eq('id', targetId).maybeSingle(),
+  ])
+  if (!src || !tgt) {
+    redirect('/admin/catalog?action=product_saved_err&reason=target_not_found')
+  }
+
+  // 1. Re-point cocktails.
+  await db
+    .from('cocktails')
+    .update({ base_product_id: targetId })
+    .eq('base_product_id', sourceId)
+
+  // 2. Re-point cocktail_ingredients.
+  await db
+    .from('cocktail_ingredients')
+    .update({ global_product_id: targetId })
+    .eq('global_product_id', sourceId)
+
+  // 3. Handle workspace_products UNIQUE(workspace_id, global_product_id) —
+  //    drop source rows in workspaces that already stock the target, then
+  //    re-point the rest.
+  const { data: sourceStocks } = await db
+    .from('workspace_products')
+    .select('workspace_id')
+    .eq('global_product_id', sourceId)
+  const { data: targetStocks } = await db
+    .from('workspace_products')
+    .select('workspace_id')
+    .eq('global_product_id', targetId)
+  const targetSet = new Set(
+    ((targetStocks ?? []) as { workspace_id: string }[]).map((r) => r.workspace_id),
+  )
+  const colliding = ((sourceStocks ?? []) as { workspace_id: string }[])
+    .map((r) => r.workspace_id)
+    .filter((w) => targetSet.has(w))
+  if (colliding.length > 0) {
+    await db
+      .from('workspace_products')
+      .delete()
+      .eq('global_product_id', sourceId)
+      .in('workspace_id', colliding)
+  }
+  await db
+    .from('workspace_products')
+    .update({ global_product_id: targetId })
+    .eq('global_product_id', sourceId)
+
+  // 4. Drop the now-unreferenced source.
+  const { error: deleteErr } = await db.from('global_products').delete().eq('id', sourceId)
+  if (deleteErr) {
+    redirect(`/admin/catalog/products/${sourceId}?saved=0&err=${encodeURIComponent(deleteErr.message)}`)
+  }
+
+  revalidatePath('/admin/catalog')
+  revalidatePath(`/admin/catalog/products/${targetId}`)
+  redirect(`/admin/catalog/products/${targetId}?saved=1`)
+}
+
 export async function deleteProductAction(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '')
   if (!id) redirect('/admin/catalog?action=product_deleted_err&reason=missing_name')
