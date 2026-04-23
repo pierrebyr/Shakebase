@@ -1210,36 +1210,57 @@ export default function MarketingHome() {
           <Stagger className="section-head center" stagger={0.08}>
             <div className="eyebrow">Integrations</div>
             <h2 className="section-title">
-              Connects to your <span className="it">whole stack.</span>
+              Built to <span className="it">plug in.</span>
             </h2>
             <p className="section-sub" style={{ marginInline: 'auto' }}>
-              POS, storage, design, communications — ShakeBase plugs in where your team already
-              works.
+              A clean REST API and outbound webhooks are on the near roadmap — so ShakeBase fits
+              around the stack your team already uses, from POS to Slack to whatever you&rsquo;ll
+              adopt next.
             </p>
           </Stagger>
           <Stagger className="integ-grid" stagger={0.04} distance={14}>
             {[
-              ['#ff4e2b', 'T', 'Toast POS'],
-              ['#4A154B', 'S', 'Slack'],
-              ['#000', 'F', 'Figma'],
-              ['#3a7f5a', 'G', 'Google Drive'],
-              ['#0061ff', 'D', 'Dropbox'],
-              ['#1a1918', '⁂', 'Webhooks'],
-              ['#e41e2d', 'L', 'Lightspeed'],
-              ['#6264a7', 'T', 'Teams'],
-              ['#8b7ed6', 'N', 'Notion'],
-              ['#000', 'X', 'Linear'],
-              ['#ff7262', 'A', 'Airtable'],
-              ['#c49155', '+', 'API'],
-            ].map(([bg, mark, name]) => (
+              ['#1a1918', '⁂', 'Webhooks', 'Q2 2026'],
+              ['#c49155', '+', 'REST API', 'Q2 2026'],
+              ['#ff4a00', 'Z', 'Zapier', 'Q2 2026'],
+              ['#4A154B', 'S', 'Slack', 'Q3 2026'],
+              ['#ff4e2b', 'T', 'Toast POS', 'Q4 2026'],
+              ['#e41e2d', 'L', 'Lightspeed', 'On request'],
+            ].map(([bg, mark, name, eta]) => (
               <div key={name} className="integ-cell">
                 <div className="logo" style={{ background: bg }}>
                   {mark}
                 </div>
                 <div className="nm">{name}</div>
+                <div
+                  className="mono"
+                  style={{
+                    fontSize: 9.5,
+                    color: 'var(--ink-4)',
+                    letterSpacing: '0.08em',
+                    marginTop: 2,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {eta}
+                </div>
               </div>
             ))}
           </Stagger>
+          <p
+            style={{
+              marginTop: 24,
+              textAlign: 'center',
+              fontSize: 12.5,
+              color: 'var(--ink-4)',
+              maxWidth: '52ch',
+              marginInline: 'auto',
+            }}
+          >
+            Once Zapier ships you get one-click connections to 6,000+ other apps — Notion,
+            Airtable, Sheets, Gmail, Teams, Discord and the rest. Need something sooner?{' '}
+            <a href="/contact?topic=integrations">Tell us</a>.
+          </p>
         </div>
       </section>
 
@@ -1473,7 +1494,7 @@ export default function MarketingHome() {
               },
               {
                 q: 'Do you pull in live pour data from our POS?',
-                a: 'Yes. We support native integrations with Toast, Lightspeed, Revel, and Square. Pour data flows in every 15 minutes and is attributed down to cocktail, creator, and venue. Other POS systems can connect via our REST API or Zapier.',
+                a: 'Not yet. A Toast POS integration is on the roadmap for Q4 2026, with Lightspeed close behind. Once live, pour data flows in every 15 minutes and is attributed down to cocktail, creator, and venue. In the meantime, the REST API + webhooks we ship in Q2 2026 let you push data from any POS — and a Zapier app will cover the long tail.',
               },
               {
                 q: 'Who owns the recipes?',

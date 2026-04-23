@@ -350,7 +350,8 @@
 /* Integrations */
 .mk-scope .integ-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-top: 40px; }
 @media (max-width: 980px) { .mk-scope .integ-grid { grid-template-columns: repeat(3, 1fr); } }
-.mk-scope .integ-cell { aspect-ratio: 1; border: 1px solid var(--line-1); border-radius: 14px; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; transition: transform 160ms, border-color 160ms; }
+@media (max-width: 560px) { .mk-scope .integ-grid { grid-template-columns: repeat(2, 1fr); } }
+.mk-scope .integ-cell { min-height: 150px; padding: 16px 12px; border: 1px solid var(--line-1); border-radius: 14px; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; transition: transform 160ms, border-color 160ms; }
 .mk-scope .integ-cell:hover { transform: translateY(-2px); border-color: var(--ink-3); }
 .mk-scope .integ-cell .logo { width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center; color: #fff; font-family: var(--font-display); font-style: italic; font-size: 22px; font-weight: 400; }
 .mk-scope .integ-cell .nm { font-size: 12.5px; font-weight: 500; color: var(--ink-1); }
