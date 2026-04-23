@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
 import { getUser } from '@/lib/auth/session'
+import { trackEvent } from '@/lib/activity/track'
+import { ACTIVITY_KINDS } from '@/lib/activity/kinds'
 
 type Result = { ok: true } | { ok?: undefined; error: string }
 
@@ -18,7 +20,7 @@ export async function toggleFavoriteAction(cocktailId: string): Promise<Result> 
   // Verify cocktail belongs to this workspace
   const { data: cocktail } = await db
     .from('cocktails')
-    .select('id')
+    .select('id, name')
     .eq('id', cocktailId)
     .eq('workspace_id', workspace.id)
     .maybeSingle()
@@ -31,6 +33,7 @@ export async function toggleFavoriteAction(cocktailId: string): Promise<Result> 
     .eq('cocktail_id', cocktailId)
     .maybeSingle()
 
+  let toggledTo: 'favorite' | 'unfavorite'
   if (existing) {
     const { error } = await db
       .from('user_cocktail_favorites')
@@ -38,6 +41,7 @@ export async function toggleFavoriteAction(cocktailId: string): Promise<Result> 
       .eq('user_id', user.id)
       .eq('cocktail_id', cocktailId)
     if (error) return { error: error.message }
+    toggledTo = 'unfavorite'
   } else {
     const { error } = await db.from('user_cocktail_favorites').insert({
       user_id: user.id,
@@ -45,7 +49,19 @@ export async function toggleFavoriteAction(cocktailId: string): Promise<Result> 
       workspace_id: workspace.id,
     })
     if (error) return { error: error.message }
+    toggledTo = 'favorite'
   }
+
+  await trackEvent({
+    kind:
+      toggledTo === 'favorite'
+        ? ACTIVITY_KINDS.COCKTAIL_FAVORITE
+        : ACTIVITY_KINDS.COCKTAIL_UNFAVORITE,
+    target: { type: 'cocktail', id: cocktail.id, label: cocktail.name },
+    // Mutations are always worth logging — skip the dedupe so repeated
+    // toggles show up distinctly in the timeline.
+    dedupeWindowSec: 0,
+  })
 
   revalidatePath('/cocktails')
   revalidatePath('/dashboard')

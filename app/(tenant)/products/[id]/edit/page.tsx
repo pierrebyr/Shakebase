@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
 import { ProductEditForm, type UsedInRef } from './ProductEditForm'
+import { trackEvent } from '@/lib/activity/track'
+import { ACTIVITY_KINDS } from '@/lib/activity/kinds'
 import './product-edit.css'
 
 type Props = { params: Promise<{ id: string }> }
@@ -46,6 +48,16 @@ export default async function EditProductPage({ params }: Props) {
   const row = data as WorkspaceRow | null
   if (!row || !row.global_products) notFound()
   const g = row.global_products
+
+  await trackEvent({
+    kind: ACTIVITY_KINDS.PRODUCT_VIEW,
+    target: {
+      type: 'product',
+      id: row.id,
+      label: `${g.brand} · ${g.expression}`,
+    },
+    metadata: { global_product_id: g.id, category: g.category },
+  })
 
   // Cocktails that reference this product
   const { data: usedData } = await supabase

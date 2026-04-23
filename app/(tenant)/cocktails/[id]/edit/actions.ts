@@ -8,6 +8,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
 import { getUser } from '@/lib/auth/session'
 import { SPIRIT_BASES } from '@/lib/cocktail/categories'
+import { trackEvent } from '@/lib/activity/track'
+import { ACTIVITY_KINDS } from '@/lib/activity/kinds'
 
 export type MutationResult = { ok: true } | { ok: false; error: string }
 
@@ -62,6 +64,14 @@ export async function updateBasicsAction(_: unknown, formData: FormData): Promis
     .eq('workspace_id', workspace.id)
 
   if (error) return { ok: false, error: error.message }
+
+  await trackEvent({
+    kind: ACTIVITY_KINDS.COCKTAIL_EDIT,
+    target: { type: 'cocktail', id, label: patch.name },
+    metadata: { status: patch.status, category: patch.category, spirit_base: patch.spirit_base },
+    // Collapse rapid-fire saves on the same cocktail into one event.
+    dedupeWindowSec: 30,
+  })
 
   revalidatePath('/cocktails', 'layout')
   // Sidebar is rendered from the tenant layout — flush it so a pin toggle
@@ -231,12 +241,28 @@ export async function deleteCocktailAction(formData: FormData): Promise<void> {
   if (!parsed.success) throw new Error('Invalid form')
 
   const supabase = await createClient()
+
+  // Read the name before deletion so the activity event can label it.
+  const { data: row } = await supabase
+    .from('cocktails')
+    .select('id, name, slug')
+    .eq('id', parsed.data.id)
+    .eq('workspace_id', workspace.id)
+    .maybeSingle<{ id: string; name: string; slug: string }>()
+
   const { error } = await supabase
     .from('cocktails')
     .delete()
     .eq('id', parsed.data.id)
     .eq('workspace_id', workspace.id)
   if (error) throw new Error(error.message)
+
+  await trackEvent({
+    kind: ACTIVITY_KINDS.COCKTAIL_DELETE,
+    target: { type: 'cocktail', id: parsed.data.id, label: row?.name ?? null },
+    metadata: { slug: row?.slug ?? null },
+    dedupeWindowSec: 0,
+  })
 
   redirect('/cocktails')
 }

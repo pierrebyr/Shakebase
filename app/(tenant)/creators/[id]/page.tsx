@@ -9,6 +9,8 @@ import { FlagEmoji } from '@/components/FlagEmoji'
 import { MedalIcon } from '@/components/cocktail/MedalIcon'
 import { Icon } from '@/components/icons'
 import type { CreatorRow, Socials } from '@/lib/creator/types'
+import { trackEvent } from '@/lib/activity/track'
+import { ACTIVITY_KINDS } from '@/lib/activity/kinds'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -141,6 +143,12 @@ export default async function CreatorProfilePage({ params }: Props) {
     .maybeSingle()
   const creator = creatorData as CreatorRow | null
   if (!creator) notFound()
+
+  await trackEvent({
+    kind: ACTIVITY_KINDS.CREATOR_VIEW,
+    target: { type: 'creator', id: creator.id, label: creator.name },
+    metadata: { role: creator.role, city: creator.city },
+  })
 
   const { data: cocktailsData } = await supabase
     .from('cocktails')

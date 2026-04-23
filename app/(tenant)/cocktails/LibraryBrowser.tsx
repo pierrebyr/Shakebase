@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   CocktailCard,
@@ -110,6 +110,39 @@ export function LibraryBrowser({ cocktails, allCollections }: Props) {
 
   const hasFilter =
     spirit !== 'All' || category !== 'All' || season !== 'All' || occasion !== 'All'
+
+  // Track library searches — debounced, so a single query is logged once
+  // after the user stops typing, not on every keystroke.
+  const filteredCount = filtered.length
+  useEffect(() => {
+    const q = search.trim()
+    if (q.length < 2) return
+    const timer = setTimeout(() => {
+      const body = JSON.stringify({
+        events: [
+          {
+            kind: 'search.query',
+            metadata: { q, scope: 'cocktails', result_count: filteredCount },
+          },
+        ],
+      })
+      try {
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+          const blob = new Blob([body], { type: 'application/json' })
+          if (navigator.sendBeacon('/api/activity', blob)) return
+        }
+      } catch {
+        // fall through to fetch
+      }
+      void fetch('/api/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true,
+      }).catch(() => {})
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [search, filteredCount])
 
   function clearAll() {
     setSpirit('All')

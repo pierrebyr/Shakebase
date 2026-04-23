@@ -32,6 +32,11 @@ type TrackInput = {
   sessionId?: string | null
   // Override the default 30 s dedupe window. Pass 0 to always write.
   dedupeWindowSec?: number
+  // Extra discriminator folded into the dedupe key. Use this for events
+  // that don't have a target_id but still need per-value dedupe — e.g.
+  // a search query string, so "marg" and "tonic" each get their own
+  // window instead of collapsing to a single "search.query" bucket.
+  dedupeDiscriminator?: string | null
 }
 
 // Fire-and-forget activity log. Never throws — tracking failures must
@@ -59,7 +64,8 @@ export async function trackEvent(input: TrackInput): Promise<void> {
     const targetId = input.target?.id ?? null
     const windowSec = input.dedupeWindowSec ?? 30
     if (redis && windowSec > 0) {
-      const dedupeKey = `activity:dedupe:${workspaceId}:${user.id}:${input.kind}:${targetId ?? 'none'}`
+      const discriminator = input.dedupeDiscriminator ?? targetId ?? 'none'
+      const dedupeKey = `activity:dedupe:${workspaceId}:${user.id}:${input.kind}:${discriminator}`
       const ok = await redis.set(dedupeKey, '1', { nx: true, ex: windowSec })
       if (!ok) return
     }

@@ -8,6 +8,8 @@ import { getCurrentWorkspace } from '@/lib/workspace/context'
 import { getUser } from '@/lib/auth/session'
 import { slugify } from '@/lib/slug'
 import { formatIngredientAmount } from '@/lib/cocktail/categories'
+import { trackEvent } from '@/lib/activity/track'
+import { ACTIVITY_KINDS } from '@/lib/activity/kinds'
 
 const IngredientSchema = z.object({
   name: z.string(),
@@ -165,6 +167,13 @@ export async function submitCocktailDraft(_: unknown, formData: FormData): Promi
   }
   const cocktailId = inserted.id
   const cocktailSlug = inserted.slug
+
+  await trackEvent({
+    kind: ACTIVITY_KINDS.COCKTAIL_CREATE,
+    target: { type: 'cocktail', id: cocktailId, label: d.name },
+    metadata: { slug: cocktailSlug, category: d.category, spirit_base: d.spirit },
+    dedupeWindowSec: 0,
+  })
 
   // 2. Resolve any free-text names to global_ingredients (upsert), then
   //    batch-insert cocktail_ingredients with FK links (no custom_name).

@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentWorkspace } from '@/lib/workspace/context'
+import { trackEvent } from '@/lib/activity/track'
+import { ACTIVITY_KINDS } from '@/lib/activity/kinds'
 
 export type SearchHit =
   | { kind: 'cocktail'; id: string; slug: string; title: string; subtitle: string | null; image_url: string | null; orb_from: string | null; orb_to: string | null }
@@ -110,6 +112,28 @@ export async function topbarSearchAction(query: string): Promise<SearchResult> {
       }),
     ),
   ]
+
+  const resultCount = cocktails.length + creators.length + ingredients.length
+  // Only log if the user typed something meaningful — single-char queries
+  // are noise (autocomplete-style); 2+ chars is an intentional search.
+  if (q.length >= 2) {
+    await trackEvent({
+      kind: ACTIVITY_KINDS.SEARCH_QUERY,
+      metadata: {
+        q,
+        scope: 'global',
+        result_count: resultCount,
+        cocktails_count: cocktails.length,
+        creators_count: creators.length,
+        ingredients_count: ingredients.length,
+      },
+      // Dedupe per normalized query within a minute — typing "mar" →
+      // "marg" → "marga" still logs each distinct query, but reloading
+      // the same query 5 s later is suppressed.
+      dedupeWindowSec: 60,
+      dedupeDiscriminator: `global:${q.toLowerCase()}`,
+    })
+  }
 
   return { cocktails, creators, ingredients }
 }

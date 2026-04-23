@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 export const dynamic = 'force-dynamic'
 
 import { getCurrentWorkspace } from '@/lib/workspace/context'
@@ -9,6 +10,7 @@ import { StatCard } from '@/components/StatCard'
 import { BarRow } from '@/components/BarRow'
 import { Avatar } from '@/components/cocktail/Avatar'
 import { Icon } from '@/components/icons'
+import { TeamActivityView } from './TeamActivityView'
 
 type CocktailRow = {
   id: string
@@ -38,10 +40,48 @@ function dollars(cents: number | null | undefined): string {
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`
 }
 
-export default async function AnalyticsPage() {
-  await requireUser()
+type SearchParams = { tab?: string; days?: string }
+
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const user = await requireUser()
   const workspace = await getCurrentWorkspace()
   const supabase = await createClient()
+  const { tab, days: daysParam } = await searchParams
+
+  // Gate the Team-activity tab to owners + super admins. Editors/viewers
+  // keep library analytics (unchanged below) but never see team stats.
+  const admin = createAdminClient()
+  const [{ data: meRow }, { data: superRow }] = await Promise.all([
+    admin
+      .from('memberships')
+      .select('role')
+      .eq('workspace_id', workspace.id)
+      .eq('user_id', user.id)
+      .not('joined_at', 'is', null)
+      .maybeSingle(),
+    admin.from('super_admins').select('user_id').eq('user_id', user.id).maybeSingle(),
+  ])
+  const isOwner = (meRow as { role: string } | null)?.role === 'owner'
+  const isSuperAdmin = Boolean(superRow)
+  const canSeeTeamTab = isOwner || isSuperAdmin
+
+  if (tab === 'team' && canSeeTeamTab) {
+    const days = daysParam === '7' || daysParam === '90' ? Number(daysParam) : 30
+    return (
+      <div className="page fade-up">
+        <AnalyticsTabs active="team" canSeeTeamTab={canSeeTeamTab} />
+        <TeamActivityView
+          workspaceId={workspace.id}
+          workspaceName={workspace.name}
+          days={days}
+        />
+      </div>
+    )
+  }
 
   const [
     { data: cocktailsData },
@@ -288,6 +328,7 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="page fade-up">
+      <AnalyticsTabs active="library" canSeeTeamTab={canSeeTeamTab} />
       <div className="page-head">
         <div className="page-kicker">Analytics · {workspace.name}</div>
         <h1 className="page-title">Library at a glance.</h1>
@@ -1051,6 +1092,50 @@ function MiniStat({
       {sub && (
         <span style={{ fontSize: 11.5, color: 'var(--ink-4)' }}>{sub}</span>
       )}
+    </div>
+  )
+}
+
+function AnalyticsTabs({
+  active,
+  canSeeTeamTab,
+}: {
+  active: 'library' | 'team'
+  canSeeTeamTab: boolean
+}) {
+  if (!canSeeTeamTab) return null
+  const tab = (label: string, isActive: boolean, href: string) => (
+    <Link
+      href={href}
+      scroll={false}
+      style={{
+        padding: '8px 16px',
+        borderRadius: 999,
+        fontSize: 12.5,
+        fontWeight: 500,
+        background: isActive ? '#fff' : 'transparent',
+        color: isActive ? 'var(--ink-1)' : 'var(--ink-4)',
+        boxShadow: isActive ? 'var(--shadow-1)' : 'none',
+        letterSpacing: '0.01em',
+      }}
+    >
+      {label}
+    </Link>
+  )
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        gap: 4,
+        padding: 4,
+        borderRadius: 999,
+        background: 'var(--bg-sunken)',
+        border: '1px solid var(--line-2)',
+        marginBottom: 18,
+      }}
+    >
+      {tab('Library', active === 'library', '/analytics')}
+      {tab('Team activity', active === 'team', '/analytics?tab=team')}
     </div>
   )
 }

@@ -16,6 +16,7 @@ import { marketingUrl } from '@/lib/cookies'
 import { TrialBanner } from '@/components/shell/TrialBanner'
 import { ImpersonationBanner } from '@/components/shell/ImpersonationBanner'
 import { ThemeApplier } from '@/components/ThemeApplier'
+import { PageViewTracker } from '@/components/tracking/PageViewTracker'
 
 // Race a thenable against an explicit deadline — Supabase calls can hang
 // silently on cold starts and push the layout past Vercel's 10s serverless
@@ -156,6 +157,7 @@ export default async function TenantLayout({ children }: { children: React.React
           trialEndsAt={workspace.trial_ends_at}
           frozen={frozen}
         />
+        <PageViewTracker />
         {children}
       </div>
     </div>
