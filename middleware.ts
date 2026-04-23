@@ -6,7 +6,37 @@ const DEV_ROOT = process.env.NEXT_PUBLIC_DEV_ROOT_DOMAIN ?? 'lvh.me'
 
 type Layer = 'marketing' | 'tenant' | 'admin'
 
-const MARKETING_PATHS = ['/', '/signup', '/login', '/pricing', '/contact', '/accept-invite']
+const MARKETING_PATHS = [
+  '/',
+  '/signup',
+  '/login',
+  '/pricing',
+  '/contact',
+  '/accept-invite',
+  '/holding',
+  '/terms',
+  '/privacy',
+  '/security',
+  '/dpa',
+  '/cookies',
+]
+
+// ── PUBLIC-MARKETING LOCKDOWN ─────────────────────────────────────────
+// While the IP review is active, every marketing path not in this list
+// is rewritten to /holding for non-super-admin visitors. Super-admins
+// see the real site. To re-open the site, delete the block that calls
+// applyMarketingLockdown in the middleware body and remove this
+// constant. See docs/overview.md for the full checklist.
+const MARKETING_PUBLIC_ALLOW = [
+  '/login',
+  '/terms',
+  '/privacy',
+  '/security',
+  '/dpa',
+  '/cookies',
+  '/accept-invite',
+  '/holding',
+]
 const TENANT_PATHS = [
   '/dashboard',
   '/cocktails',
@@ -70,13 +100,43 @@ export async function middleware(request: NextRequest) {
   // 1. Refresh Supabase session — this binds cookie mutations to the
   //    response we'll return. The `response` is mutable; if we redirect later
   //    we must copy its cookies onto the redirect response.
-  const { response } = await refreshSupabaseSession(request)
+  const { response, user, supabase } = await refreshSupabaseSession(request)
 
   // Mirror the hints onto the response headers too, so any downstream
   // consumer (e.g. a custom header-reading client) can see them.
   response.headers.set('x-app-layer', layer)
   response.headers.set('x-pathname', pathname)
   if (slug) response.headers.set('x-workspace-slug', slug)
+
+  // ── PUBLIC-MARKETING LOCKDOWN ────────────────────────────────────────
+  // Gate every marketing path not in the public allow-list behind a
+  // super-admin check. Runs here (not in the layout) because soft
+  // navigations would otherwise hit the cached layout and skip the check.
+  if (layer === 'marketing' && !pathname.startsWith('/api/')) {
+    const isAlwaysPublic = MARKETING_PUBLIC_ALLOW.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`),
+    )
+    if (!isAlwaysPublic) {
+      let isSuperAdmin = false
+      if (user) {
+        // is_super_admin() is SECURITY DEFINER — any authenticated user
+        // can call it and get a boolean for their own auth.uid().
+        const { data } = await supabase.rpc('is_super_admin')
+        isSuperAdmin = Boolean(data)
+      }
+      if (!isSuperAdmin) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/holding'
+        url.search = ''
+        const rewrite = NextResponse.rewrite(url)
+        response.cookies.getAll().forEach((c) =>
+          rewrite.cookies.set(c.name, c.value, c),
+        )
+        response.headers.forEach((v, k) => rewrite.headers.set(k, v))
+        return rewrite
+      }
+    }
+  }
 
   // API routes are host-aware via their handlers; no access control rewrites.
   if (pathname.startsWith('/api/')) {
