@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { refreshSupabaseSession } from '@/lib/supabase/middleware'
+import { workspaceUrl } from '@/lib/cookies'
 
 const PROD_ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'shakebase.co'
 const DEV_ROOT = process.env.NEXT_PUBLIC_DEV_ROOT_DOMAIN ?? 'lvh.me'
@@ -108,23 +109,52 @@ export async function middleware(request: NextRequest) {
   response.headers.set('x-pathname', pathname)
   if (slug) response.headers.set('x-workspace-slug', slug)
 
-  // ── PUBLIC-MARKETING LOCKDOWN ────────────────────────────────────────
-  // Gate every marketing path not in the public allow-list behind a
-  // super-admin check. Runs here (not in the layout) because soft
-  // navigations would otherwise hit the cached layout and skip the check.
+  // ── PUBLIC-MARKETING LOCKDOWN + SIGNED-IN FAST-PATH ──────────────────
+  // Runs here (not in the layout) because soft navigations would
+  // otherwise hit the cached layout and skip the check.
+  //
+  // Three cases, in order:
+  //   (a) super-admin → pass through, see the real marketing site
+  //   (b) signed-in non-admin on `/` or `/login` → redirect straight to
+  //       their workspace dashboard (they don't need the public site)
+  //   (c) anyone else on a non-allow-listed path → rewrite to /holding
   if (layer === 'marketing' && !pathname.startsWith('/api/')) {
-    const isAlwaysPublic = MARKETING_PUBLIC_ALLOW.some(
-      (p) => pathname === p || pathname.startsWith(`${p}/`),
-    )
-    if (!isAlwaysPublic) {
-      let isSuperAdmin = false
-      if (user) {
-        // is_super_admin() is SECURITY DEFINER — any authenticated user
-        // can call it and get a boolean for their own auth.uid().
-        const { data } = await supabase.rpc('is_super_admin')
-        isSuperAdmin = Boolean(data)
+    let isSuperAdmin = false
+    if (user) {
+      // is_super_admin() is SECURITY DEFINER — any authenticated user
+      // can call it and get a boolean for their own auth.uid().
+      const { data } = await supabase.rpc('is_super_admin')
+      isSuperAdmin = Boolean(data)
+    }
+
+    // (b) Signed-in non-admin → straight to their workspace.
+    if (user && !isSuperAdmin && (pathname === '/' || pathname === '/login')) {
+      const { data: memberships } = await supabase
+        .from('memberships')
+        .select('workspaces!inner(slug)')
+        .eq('user_id', user.id)
+        .not('joined_at', 'is', null)
+        .limit(1)
+      const hit = (memberships ?? [])[0] as
+        | { workspaces: { slug: string } | null }
+        | undefined
+      const wsSlug = hit?.workspaces?.slug
+      if (wsSlug) {
+        const target = new URL(workspaceUrl(wsSlug, '/dashboard'))
+        const r = NextResponse.redirect(target)
+        response.cookies.getAll().forEach((c) => r.cookies.set(c.name, c.value, c))
+        return r
       }
-      if (!isSuperAdmin) {
+      // No workspace for this user — fall through to the lockdown gate.
+    }
+
+    // (c) Lockdown rewrite for non-allow-listed paths (only for
+    //     non-super-admin visitors).
+    if (!isSuperAdmin) {
+      const isAlwaysPublic = MARKETING_PUBLIC_ALLOW.some(
+        (p) => pathname === p || pathname.startsWith(`${p}/`),
+      )
+      if (!isAlwaysPublic) {
         const url = request.nextUrl.clone()
         url.pathname = '/holding'
         url.search = ''
