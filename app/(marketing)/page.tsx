@@ -1416,37 +1416,37 @@ export default function MarketingHome() {
               </Link>
             </div>
 
-            <div className="plan">
-              <div>
-                <div className="plan-tag">Enterprise</div>
-                <div className="plan-name">Global</div>
+          </div>
+
+          {/* Enterprise — set apart from the 3 self-serve tiers */}
+          <div className="price-enterprise">
+            <div>
+              <div className="ent-tag">Enterprise · Global</div>
+              <div className="ent-title">
+                25+ venues? <span>Let&rsquo;s talk.</span>
               </div>
-              <div className="plan-price">
-                <span className="amt">Let&rsquo;s talk</span>
-              </div>
-              <div className="plan-desc">
-                For brands with 25+ venues, custom domains, and regulated compliance needs.
-              </div>
-              <ul className="plan-feats">
+            </div>
+            <div>
+              <p className="ent-desc">
+                For spirits groups and hospitality brands that need custom domains,
+                SSO, procurement red-lines, and a dedicated success team.
+              </p>
+              <ul className="ent-feats">
                 <li>Unlimited venues</li>
                 <li>
-                  Custom domain (e.g.{' '}
-                  <code style={{ fontSize: 11.5 }}>recipes.yourbrand.com</code>)
+                  Custom domain (<code style={{ fontSize: 11 }}>recipes.yourbrand.com</code>)
                 </li>
                 <li>SSO (Google, Okta, Azure AD)</li>
                 <li>Dedicated success team</li>
-                <li>Custom SLA, audit log, retention</li>
+                <li>Custom SLA + audit log retention</li>
                 <li>Priority integration work</li>
               </ul>
-              <Link
-                href="/contact"
-                className="mk-btn sec lg"
-                style={{ justifyContent: 'center' }}
-              >
-                Talk to sales →
-              </Link>
             </div>
+            <Link href="/contact" className="mk-btn amber lg">
+              Talk to sales →
+            </Link>
           </div>
+
           <p
             style={{
               marginTop: 20,
