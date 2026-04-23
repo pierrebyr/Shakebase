@@ -67,6 +67,8 @@ export async function middleware(request: NextRequest) {
   // Set layer hints for server components
   response.headers.set('x-app-layer', layer)
   request.headers.set('x-app-layer', layer)
+  response.headers.set('x-pathname', pathname)
+  request.headers.set('x-pathname', pathname)
   if (slug) {
     response.headers.set('x-workspace-slug', slug)
     request.headers.set('x-workspace-slug', slug)

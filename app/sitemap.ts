@@ -1,19 +1,14 @@
 import type { MetadataRoute } from 'next'
 
-const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'shakebase.co'
-const SITE_URL = `https://${ROOT}`
-
+// ── PUBLIC-MARKETING LOCKDOWN ─────────────────────────────────────────
+// Public sitemap intentionally empty while the marketing surface is
+// gated. Leaving the route in place (empty array) means /sitemap.xml
+// returns a valid, empty sitemap rather than a 404 — avoids confusing
+// any tool that probes for it.
+//
+// To re-open: restore the previous list of marketing URLs from git
+// history before 2026-04-23.
+// ──────────────────────────────────────────────────────────────────────
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date()
-  return [
-    { url: `${SITE_URL}/`, lastModified: now, changeFrequency: 'weekly', priority: 1 },
-    { url: `${SITE_URL}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${SITE_URL}/signup`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${SITE_URL}/login`, lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
-    { url: `${SITE_URL}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${SITE_URL}/security`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${SITE_URL}/cookies`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
-    { url: `${SITE_URL}/dpa`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
-  ]
+  return []
 }
