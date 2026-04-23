@@ -15,6 +15,8 @@ import {
   ingredientKey,
   type SimilarCandidate,
 } from '@/lib/cocktail/similar'
+import { trackEvent } from '@/lib/activity/track'
+import { ACTIVITY_KINDS } from '@/lib/activity/kinds'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -98,6 +100,16 @@ export default async function CocktailDetailPage({ params }: Props) {
   const cocktail = cocktailData as unknown as CocktailRow | null
   if (!cocktail) notFound()
   const id = cocktail.id
+
+  await trackEvent({
+    kind: ACTIVITY_KINDS.COCKTAIL_VIEW,
+    target: { type: 'cocktail', id: cocktail.id, label: cocktail.name },
+    metadata: {
+      slug: cocktail.slug,
+      category: cocktail.category,
+      spirit_base: cocktail.spirit_base,
+    },
+  })
 
   // Detect mono-spirit workspaces (e.g. Casa Dragones — only tequila but multiple
   // expressions). In that case we surface the product expression (Blanco, Añejo…)
