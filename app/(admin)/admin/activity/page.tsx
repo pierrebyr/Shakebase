@@ -236,7 +236,7 @@ export default async function AdminActivityPage({
             {spikes.slice(0, 5).map((s) => (
               <Link
                 key={s.id}
-                href={`/admin/workspaces/${s.id}`}
+                href={`/admin/activity/${s.id}`}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr auto auto',
@@ -309,7 +309,7 @@ export default async function AdminActivityPage({
                     <tr key={r.id}>
                       <td>
                         <Link
-                          href={`/admin/workspaces/${r.id}`}
+                          href={`/admin/activity/${r.id}`}
                           style={{ fontWeight: 500, color: 'var(--op-ink-1)' }}
                         >
                           {r.workspace?.name ?? r.id}
@@ -368,11 +368,11 @@ export default async function AdminActivityPage({
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <Link
-                          href={`/admin/workspaces/${r.id}`}
-                          className="op-btn sm ghost"
+                          href={`/admin/activity/${r.id}`}
+                          className="op-btn sm"
                           style={{ fontSize: 11 }}
                         >
-                          View
+                          Drill in
                           <OpIcon name="chevron" size={10} />
                         </Link>
                       </td>
