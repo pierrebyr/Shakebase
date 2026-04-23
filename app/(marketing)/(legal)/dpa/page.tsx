@@ -30,6 +30,34 @@ export default function DPAPage() {
         for advertising or machine-learning model training.
       </p>
 
+      <h2>Categories of data</h2>
+      <ul>
+        <li>
+          <strong>Identity &amp; access:</strong> name, email, authentication
+          tokens, workspace membership and role.
+        </li>
+        <li>
+          <strong>Content you create:</strong> cocktails, ingredients, creators,
+          collections, uploaded images, method and tasting notes.
+        </li>
+        <li>
+          <strong>Billing metadata:</strong> Stripe customer ID, subscription
+          status, invoice history. We never see card details.
+        </li>
+        <li>
+          <strong>Workspace activity logs:</strong> per-member page views, detail
+          views (cocktails, products, creators), search queries, and mutation
+          events (create / edit / delete / favorite). Scoped to one workspace,
+          readable only by that workspace&rsquo;s owner (and ShakeBase
+          administrators in a processor capacity). Retention: 90 days rolling.
+          Attribution is anonymized when a member leaves a workspace.
+        </li>
+        <li>
+          <strong>Operational telemetry:</strong> error logs, page timings,
+          session IPs, retained 30 days for debugging and security.
+        </li>
+      </ul>
+
       <h2>Sub-processors</h2>
       <ul>
         <li>

@@ -36,6 +36,7 @@ const CRUMB_LABEL: Record<string, string> = {
   catalog: 'Global catalog',
   users: 'Users',
   audit: 'Audit log',
+  activity: 'Activity',
   billing: 'Billing',
 }
 
@@ -44,6 +45,7 @@ function pageFromPath(path: string): string {
   if (path.startsWith('/admin/catalog')) return 'catalog'
   if (path.startsWith('/admin/users')) return 'users'
   if (path.startsWith('/admin/audit')) return 'audit'
+  if (path.startsWith('/admin/activity')) return 'activity'
   if (path.startsWith('/admin/billing')) return 'billing'
   return 'overview'
 }
@@ -82,6 +84,7 @@ export function OpShell({ adminName, adminInitials, counts, children, impersonat
     },
     { id: 'emails', href: '/admin/emails', label: 'Email templates', icon: 'audit' },
     { id: 'audit', href: '/admin/audit', label: 'Audit log', icon: 'audit' },
+    { id: 'activity', href: '/admin/activity', label: 'Activity', icon: 'audit' },
   ]
 
   return (

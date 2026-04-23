@@ -642,6 +642,24 @@ async function renderTeamPage() {
             )
           })}
         </div>
+        <div
+          style={{
+            marginTop: 18,
+            padding: '12px 14px',
+            borderRadius: 10,
+            background: 'var(--bg-sunken)',
+            border: '1px solid var(--line-2)',
+            fontSize: 12,
+            color: 'var(--ink-3)',
+            lineHeight: 1.5,
+          }}
+        >
+          <strong style={{ color: 'var(--ink-2)' }}>Activity visibility.</strong> The
+          workspace owner can see per-member activity (pages viewed, cocktails opened,
+          search queries, mutations) in <Link href="/analytics?tab=team">Analytics →
+          Team activity</Link>. Retained 90 days; anonymized when a member leaves.
+          Details in our <a href="/privacy">Privacy Policy</a>.
+        </div>
       </div>
 
       {/* Members table */}

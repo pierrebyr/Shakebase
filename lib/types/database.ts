@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_events: {
+        Row: {
+          id: string
+          is_admin_impersonation: boolean
+          kind: string
+          metadata: Json
+          occurred_at: string
+          session_id: string | null
+          target_id: string | null
+          target_label: string | null
+          target_type: string | null
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          id?: string
+          is_admin_impersonation?: boolean
+          kind: string
+          metadata?: Json
+          occurred_at?: string
+          session_id?: string | null
+          target_id?: string | null
+          target_label?: string | null
+          target_type?: string | null
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          id?: string
+          is_admin_impersonation?: boolean
+          kind?: string
+          metadata?: Json
+          occurred_at?: string
+          session_id?: string | null
+          target_id?: string | null
+          target_label?: string | null
+          target_type?: string | null
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_events: {
         Row: {
           action: string
@@ -288,6 +338,7 @@ export type Database = {
           occasions: string[] | null
           orb_from: string | null
           orb_to: string | null
+          pinned: boolean
           season: string[] | null
           slug: string
           spirit_base: string | null
@@ -319,6 +370,7 @@ export type Database = {
           occasions?: string[] | null
           orb_from?: string | null
           orb_to?: string | null
+          pinned?: boolean
           season?: string[] | null
           slug: string
           spirit_base?: string | null
@@ -350,6 +402,7 @@ export type Database = {
           occasions?: string[] | null
           orb_from?: string | null
           orb_to?: string | null
+          pinned?: boolean
           season?: string[] | null
           slug?: string
           spirit_base?: string | null
@@ -831,6 +884,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_cocktail_favorites: {
+        Row: {
+          cocktail_id: string
+          created_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          cocktail_id: string
+          created_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          cocktail_id?: string
+          created_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_cocktail_favorites_cocktail_id_fkey"
+            columns: ["cocktail_id"]
+            isOneToOne: false
+            referencedRelation: "cocktails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_cocktail_favorites_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notification_prefs: {
         Row: {
           channel: string | null
@@ -962,6 +1051,7 @@ export type Database = {
           default_units: string | null
           default_view: string | null
           density: string | null
+          pricing_enabled: boolean
           reduce_motion: boolean | null
           show_costs: boolean | null
           theme: string | null
@@ -975,6 +1065,7 @@ export type Database = {
           default_units?: string | null
           default_view?: string | null
           density?: string | null
+          pricing_enabled?: boolean
           reduce_motion?: boolean | null
           show_costs?: boolean | null
           theme?: string | null
@@ -988,6 +1079,7 @@ export type Database = {
           default_units?: string | null
           default_view?: string | null
           density?: string | null
+          pricing_enabled?: boolean
           reduce_motion?: boolean | null
           show_costs?: boolean | null
           theme?: string | null
@@ -1052,15 +1144,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      workspace_ingredient_usage: {
+        Row: {
+          category: string | null
+          global_ingredient_id: string | null
+          name: string | null
+          usage_count: number | null
+          workspace_id: string | null
+          workspace_ingredient_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cocktail_ingredients_global_ingredient_id_fkey"
+            columns: ["global_ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "global_ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cocktail_ingredients_workspace_ingredient_id_fkey"
+            columns: ["workspace_ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cocktails_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_read_workspace: { Args: { ws: string }; Returns: boolean }
       can_write_workspace: { Args: { ws: string }; Returns: boolean }
       current_workspace_role: { Args: { ws: string }; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

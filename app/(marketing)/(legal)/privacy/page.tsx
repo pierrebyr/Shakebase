@@ -50,6 +50,14 @@ export default function PrivacyPage() {
           <a href="mailto:hello@shakebase.co"> hello@shakebase.co</a> or through the
           contact form.
         </li>
+        <li>
+          <strong>Workspace activity logs:</strong> which pages you view, which
+          cocktails/products/creators you open, and the queries you type into search.
+          Visible only to the owner of the workspace you&rsquo;re signed into (and,
+          for support, to ShakeBase administrators acting as processors). Retained
+          90 days on a rolling window, then deleted. When you leave a workspace, your
+          attribution is anonymized.
+        </li>
       </ul>
 
       <h2>Why we collect it</h2>
