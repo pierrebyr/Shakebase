@@ -252,7 +252,7 @@ export function SignupForm() {
       </button>
 
       <p className="auth-legal">
-        14-day trial · No credit card · SOC 2 Type II
+        Bartenders: free forever · Brands: 14-day trial · No credit card
       </p>
     </form>
   )

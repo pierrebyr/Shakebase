@@ -245,7 +245,7 @@ export default function ContactPage() {
                 },
                 {
                   q: 'Is this a procurement-friendly purchase?',
-                  a: "Yes — we're on the AWS Marketplace, provide SOC 2 Type II reports under NDA, sign redlines on the MSA, offer pre-paid invoicing, net-30/60 terms, and have been through procurement with Fortune 500 hospitality groups.",
+                  a: "For Enterprise, yes — we sign redlines on the MSA, share our DPA, and offer pre-paid invoicing plus net-30/60 terms. Our infrastructure (Vercel + Supabase) is SOC 2 Type II; a ShakeBase-level audit is on the roadmap. Reach out and we'll walk your procurement team through what's available today.",
                 },
                 {
                   q: 'Can I bring my own domain?',

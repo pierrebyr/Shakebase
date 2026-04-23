@@ -32,8 +32,8 @@ export default function MarketingHome() {
         <div className="wrap" style={{ padding: '0px 32px 150px' }}>
           <Stagger className="hero-inner" stagger={0.08} distance={18} amount={0.01}>
             <div className="hero-pill">
-              <span className="tag">New</span>
-              <span>ShakeBase Analytics 2.0 — signature cocktails now pour 38% more</span>
+              <span className="tag">Free</span>
+              <span>Bartenders get a free workspace — claim your handle</span>
             </div>
             <h1 className="hero-title">
               One shelf for every drink
@@ -41,7 +41,7 @@ export default function MarketingHome() {
               <span className="it">your brand pours.</span>
             </h1>
             <p className="hero-sub">
-              ShakeBase catalogues your signatures, your creators, and your pour data on a
+              ShakeBase catalogues your signatures, your creators, and your recipes on a
               subdomain that&rsquo;s yours alone — so marketing, R&amp;D, and the bar speak one
               language.
             </p>
@@ -395,8 +395,8 @@ export default function MarketingHome() {
               </div>
               <h4>Invite your team</h4>
               <p>
-                Marketing, R&amp;D, and the bar — everyone on one workspace. Roles, SSO, and
-                per-venue permissions out of the box.
+                Marketing, R&amp;D, and the bar — everyone on one workspace. Owner, editor, and
+                viewer roles out of the box, with per-workspace access control.
               </p>
             </div>
             <div className="step">
@@ -648,14 +648,17 @@ export default function MarketingHome() {
                 Pour data, <span className="it">turned into brand strategy.</span>
               </h3>
               <p>
-                Connect your POS and ShakeBase reveals which cocktails are actually selling, where
-                your premium pours are going, and which creators are driving your biggest menu
-                moments. Built for CMOs and brand marketers who need to report outcomes.
+                The analytics your brand team already wants — library health, creator
+                contribution, ingredient mix, menu pipeline — packaged so marketing and R&amp;D
+                actually use it. Pour-level POS sync is on the roadmap.
               </p>
               <ul>
-                <li>POS sync with Toast, Lightspeed, Revel, and Square.</li>
-                <li>Attribution from pour → cocktail → creator → venue → region.</li>
-                <li>Shareable monthly brand reports with press-ready charts.</li>
+                <li>Live metrics: creators, ingredients, flavor profile, price spread.</li>
+                <li>Attribution by cocktail → creator → venue — from day one.</li>
+                <li>
+                  POS sync (Toast Q4 2026 · Lightspeed on request) layers pour volumes on top
+                  when you&rsquo;re ready.
+                </li>
               </ul>
             </Reveal>
             <Reveal className="tour-mock" from="right" distance={32} duration={0.7} delay={0.15}>
@@ -752,8 +755,9 @@ export default function MarketingHome() {
                     Every brand on its own <span className="it">dedicated workspace.</span>
                   </h4>
                   <p>
-                    Your team signs in at your subdomain. Your data stays isolated. SSO, custom
-                    domains, and per-workspace retention — out of the box.
+                    Your team signs in at your subdomain. Your data stays isolated via
+                    per-workspace row-level security. Custom domains and SSO are available on
+                    Enterprise contracts.
                   </p>
                 </div>
                 <div className="tile-hero-visual">
@@ -766,9 +770,9 @@ export default function MarketingHome() {
                     <span className="pulse" />
                   </div>
                   <div className="tile-hero-meta">
-                    <span>SSO · Okta, Google, Azure AD</span>
+                    <span>Row-level isolation</span>
                     <span>•</span>
-                    <span>Custom domain</span>
+                    <span>Custom domain (Enterprise)</span>
                     <span>•</span>
                     <span>Per-workspace retention</span>
                   </div>
@@ -1137,10 +1141,10 @@ export default function MarketingHome() {
           <div className="changelog" style={{ marginTop: 14 }}>
             <span className="badge">New</span>
             <div className="txt">
-              <b>ShakeBase Analytics 2.0</b> · Regional breakdowns, creator attribution, and
-              exportable brand reports — now live for all Studio workspaces.
+              <b>Team activity tracking</b> · Workspace owners can now see who&rsquo;s
+              viewing, searching, and editing across their library — live in every workspace.
             </div>
-            <span className="date">12 APR 2026</span>
+            <span className="date">APR 2026</span>
           </div>
         </div>
       </section>
@@ -1268,39 +1272,42 @@ export default function MarketingHome() {
       <section className="section tight" style={{ background: 'var(--bg-sunken)' }}>
         <div className="wrap">
           <Stagger className="section-head center" stagger={0.08}>
-            <div className="eyebrow">Security &amp; Compliance</div>
+            <div className="eyebrow">Security</div>
             <h2 className="section-title">
               Your brand canon, <span className="it">locked tight.</span>
             </h2>
             <p className="section-sub" style={{ marginInline: 'auto' }}>
-              Every workspace is isolated, encrypted, and audited. We treat your recipes like the
+              Every workspace is isolated at the database level. Your recipes are treated like the
               IP they are.
             </p>
           </Stagger>
           {/* Plain grid — direct children stretch to equal row height. */}
           <div className="sec-grid">
             <div className="sec-card">
-              <div className="badge">SOC 2</div>
-              <h3>SOC 2 Type II</h3>
+              <div className="badge">RLS</div>
+              <h3>Per-workspace isolation</h3>
               <p>
-                Continuously audited by Prescient Assurance. Evidence and reports available under
-                NDA for every Studio and Enterprise customer.
+                Every tenant table is protected by Postgres row-level security. Access policies
+                enforce that a workspace only sees its own cocktails, creators, products, and
+                activity — zero cross-tenant leakage by design.
               </p>
             </div>
             <div className="sec-card">
               <div className="badge">GDPR</div>
-              <h3>GDPR compliant</h3>
+              <h3>GDPR-aligned</h3>
               <p>
-                EU data residency, DPA on request, per-workspace retention controls, and
-                one-click data export on account termination.
+                DPA on request, per-workspace retention controls on activity logs
+                (90-day rolling), and one-click data export on account termination. Hosted on
+                Vercel + Supabase, both SOC 2 Type II sub-processors.
               </p>
             </div>
             <div className="sec-card">
-              <div className="badge">AES-256</div>
-              <h3>Encrypted, isolated</h3>
+              <div className="badge">TLS · AES</div>
+              <h3>Encrypted end-to-end</h3>
               <p>
-                AES-256 at rest, TLS 1.3 in transit, per-tenant database isolation, SSO via
-                Google, Apple, Okta, and Azure AD.
+                TLS 1.3 in transit, AES-256 at rest (via Supabase), daily encrypted backups
+                with 30-day retention, and server-side-only secrets. Full details on our{' '}
+                <a href="/security">Security</a> page.
               </p>
             </div>
           </div>
@@ -1313,31 +1320,32 @@ export default function MarketingHome() {
           <Stagger className="section-head center" stagger={0.08}>
             <div className="eyebrow">Pricing</div>
             <h2 className="section-title">
-              Priced by <span className="it">venue</span>, not by user.
+              Free for bartenders. <span className="it">Priced by venue for brands.</span>
             </h2>
             <p className="section-sub" style={{ marginInline: 'auto' }}>
-              Your whole marketing, R&amp;D, and bar team gets in. Start free, upgrade when you&rsquo;re
-              ready.
+              Creators get a forever-free workspace. Brands start on a 14-day trial with no
+              credit card.
             </p>
           </Stagger>
           {/* Plain grid — plans stretch to equal row height. */}
           <div className="price-grid">
             <div className="plan">
               <div>
-                <div className="plan-tag">Solo</div>
-                <div className="plan-name">Bartender</div>
+                <div className="plan-tag">Bartender</div>
+                <div className="plan-name">Creator</div>
               </div>
               <div className="plan-price">
                 <span className="amt">Free</span>
+                <span className="per">forever</span>
               </div>
               <div className="plan-desc">
-                For independent creators building a personal cocktail portfolio.
+                For independent bartenders and consultants building a personal cocktail library.
               </div>
               <ul className="plan-feats">
-                <li>Up to 50 cocktails</li>
-                <li>1 venue, 3 seats</li>
+                <li>Up to 25 cocktails</li>
+                <li>1 seat (you)</li>
                 <li>Personal subdomain</li>
-                <li>Basic analytics</li>
+                <li>Access to the shared ingredient catalogue</li>
                 <li>Community support</li>
               </ul>
               <Link
@@ -1345,7 +1353,36 @@ export default function MarketingHome() {
                 className="mk-btn sec lg"
                 style={{ justifyContent: 'center' }}
               >
-                Start for free
+                Claim your handle
+              </Link>
+            </div>
+
+            <div className="plan">
+              <div>
+                <div className="plan-tag">Small brand · consultant</div>
+                <div className="plan-name">Starter</div>
+              </div>
+              <div className="plan-price">
+                <span className="amt">$99</span>
+                <span className="per">/ month</span>
+              </div>
+              <div className="plan-desc">
+                For DTC spirits brands, single-venue programs, and beverage consultants with
+                clients.
+              </div>
+              <ul className="plan-feats">
+                <li>Up to 200 cocktails</li>
+                <li>1 venue, 5 seats</li>
+                <li>Dedicated workspace subdomain</li>
+                <li>Library + team analytics</li>
+                <li>Email support</li>
+              </ul>
+              <Link
+                href="/signup"
+                className="mk-btn sec lg"
+                style={{ justifyContent: 'center' }}
+              >
+                Start 14-day trial
               </Link>
             </div>
 
@@ -1355,7 +1392,7 @@ export default function MarketingHome() {
                 <div className="plan-name">Studio</div>
               </div>
               <div className="plan-price">
-                <span className="amt">€480</span>
+                <span className="amt">$399</span>
                 <span className="per">/ venue / month</span>
               </div>
               <div className="plan-desc">
@@ -1366,8 +1403,8 @@ export default function MarketingHome() {
                 <li>Unlimited cocktails &amp; creators</li>
                 <li>Up to 25 venues, unlimited seats</li>
                 <li>Dedicated workspace subdomain</li>
-                <li>POS sync &amp; full Analytics 2.0</li>
-                <li>SSO, SOC 2 evidence, DPA</li>
+                <li>Full analytics + team activity tracking</li>
+                <li>POS sync (Toast Q4 2026)</li>
                 <li>Priority support</li>
               </ul>
               <Link
@@ -1396,10 +1433,10 @@ export default function MarketingHome() {
                   Custom domain (e.g.{' '}
                   <code style={{ fontSize: 11.5 }}>recipes.yourbrand.com</code>)
                 </li>
-                <li>EU / US / APAC data residency</li>
+                <li>SSO (Google, Okta, Azure AD)</li>
                 <li>Dedicated success team</li>
                 <li>Custom SLA, audit log, retention</li>
-                <li>API rate-limit upgrades</li>
+                <li>Priority integration work</li>
               </ul>
               <Link
                 href="/contact"
@@ -1410,6 +1447,18 @@ export default function MarketingHome() {
               </Link>
             </div>
           </div>
+          <p
+            style={{
+              marginTop: 20,
+              textAlign: 'center',
+              fontSize: 12,
+              color: 'var(--ink-4)',
+              maxWidth: '56ch',
+              marginInline: 'auto',
+            }}
+          >
+            All paid tiers billed in USD. EUR/GBP billing available for Enterprise.
+          </p>
         </div>
       </section>
 
@@ -1489,7 +1538,7 @@ export default function MarketingHome() {
             {[
               {
                 q: 'What exactly is "a workspace" on ShakeBase?',
-                a: 'Every customer — a spirits brand, hospitality group, or independent bar — gets a dedicated workspace at their own subdomain (e.g. aurelia.shakebase.co). Data, users, SSO, branding, and retention are isolated per workspace. Enterprise customers can bring their own domain.',
+                a: 'Every customer — a spirits brand, hospitality group, or independent bartender — gets a dedicated workspace at their own subdomain (e.g. aurelia.shakebase.co). Data, users, branding, and retention are isolated per workspace via Postgres row-level security. Enterprise customers can bring their own domain.',
                 open: true,
               },
               {
@@ -1502,15 +1551,15 @@ export default function MarketingHome() {
               },
               {
                 q: "How is a creator's attribution handled if they change venues?",
-                a: 'Creators are first-class entities. When a bartender moves between venues within the same workspace, their signature cocktails follow them — with the original venue retained in the recipe history. Multi-workspace portability is coming in Q3 2026.',
+                a: 'Creators are first-class entities. When a bartender moves between venues within the same workspace, their signature cocktails follow them — with the original venue retained in the recipe history. A canonical cross-workspace creator profile (with public portfolio + discovery) is on the roadmap.',
               },
               {
-                q: 'Is ShakeBase SOC 2 compliant?',
-                a: 'Yes — SOC 2 Type II, continuously audited. GDPR-aligned with EU data residency available on Studio and Enterprise plans. DPA, pentest reports, and full security documentation available under NDA.',
+                q: 'Is ShakeBase SOC 2 or ISO certified?',
+                a: "Not yet — ShakeBase itself is pre-certification. Our infrastructure sub-processors (Vercel and Supabase) are both SOC 2 Type II, so your data at rest and in transit benefits from their controls. We're happy to share our Data Processing Addendum on request. A ShakeBase-level SOC 2 audit is on the roadmap once we pass the revenue threshold where it's required.",
               },
               {
                 q: 'Can I try it with my team before we commit?',
-                a: 'Yes. Every new workspace comes with a 14-day free trial — no credit card required. You get a dedicated subdomain, up to 10 teammates, and access to every Studio feature to evaluate ShakeBase with your real cocktails.',
+                a: "Yes. Bartenders get a forever-free personal workspace. Brands start with a 14-day free trial on Starter or Studio — no credit card required. You get a dedicated subdomain and your full team to evaluate with real cocktails.",
               },
             ].map(({ q, a, open }) => (
               <FaqItem key={q} className="faq-item" question={q} defaultOpen={open}>
@@ -1587,7 +1636,7 @@ export default function MarketingHome() {
             <span>•</span>
             <span>Your workspace in minutes</span>
             <span>•</span>
-            <span>SOC 2 Type II</span>
+            <span>Free forever for bartenders</span>
           </div>
         </Stagger>
       </section>

@@ -365,8 +365,9 @@
 .mk-scope .sec-card p { font-size: 13.5px; color: var(--ink-3); line-height: 1.55; margin: 0; }
 
 /* Pricing */
-.mk-scope .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 48px; }
-@media (max-width: 900px) { .mk-scope .price-grid { grid-template-columns: 1fr; } }
+.mk-scope .price-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 48px; }
+@media (max-width: 1180px) { .mk-scope .price-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .mk-scope .price-grid { grid-template-columns: 1fr; } }
 .mk-scope .plan { padding: 32px; border: 1px solid var(--line-1); background: #fff; border-radius: 18px; display: flex; flex-direction: column; gap: 20px; }
 .mk-scope .plan.featured { background: linear-gradient(180deg, #1a1918 0%, #2a2520 100%); color: #fff; border: 1px solid #2a2520; position: relative; transform: scale(1.02); box-shadow: var(--shadow-3); }
 .mk-scope .plan.featured .plan-name { color: #fff; }
