@@ -55,24 +55,28 @@ function pathAllowed(pathname: string, allowed: string[]): boolean {
 }
 
 export async function middleware(request: NextRequest) {
-  // 1. Refresh Supabase session FIRST — this binds cookie mutations to the
-  //    response we'll return. The `response` is mutable; if we redirect later
-  //    we must copy its cookies onto the redirect response.
-  const { response } = await refreshSupabaseSession(request)
-
   const host = request.headers.get('host') ?? ''
   const { layer, slug } = resolveLayer(host)
   const { pathname } = request.nextUrl
 
-  // Set layer hints for server components
-  response.headers.set('x-app-layer', layer)
+  // Stamp the request headers BEFORE refreshSupabaseSession creates the
+  // NextResponse.next({ request }) — that call snapshots the headers it
+  // will forward to server components. Mutations made after the response
+  // is created silently don't propagate.
   request.headers.set('x-app-layer', layer)
-  response.headers.set('x-pathname', pathname)
   request.headers.set('x-pathname', pathname)
-  if (slug) {
-    response.headers.set('x-workspace-slug', slug)
-    request.headers.set('x-workspace-slug', slug)
-  }
+  if (slug) request.headers.set('x-workspace-slug', slug)
+
+  // 1. Refresh Supabase session — this binds cookie mutations to the
+  //    response we'll return. The `response` is mutable; if we redirect later
+  //    we must copy its cookies onto the redirect response.
+  const { response } = await refreshSupabaseSession(request)
+
+  // Mirror the hints onto the response headers too, so any downstream
+  // consumer (e.g. a custom header-reading client) can see them.
+  response.headers.set('x-app-layer', layer)
+  response.headers.set('x-pathname', pathname)
+  if (slug) response.headers.set('x-workspace-slug', slug)
 
   // API routes are host-aware via their handlers; no access control rewrites.
   if (pathname.startsWith('/api/')) {
