@@ -5,9 +5,9 @@ import { getUser } from '@/lib/auth/session'
 import { toCsv } from '@/lib/csv'
 import { rateLimit, rateLimitErrorMessage } from '@/lib/rate-limit'
 
-// One row per cocktail. Multi-value fields (ingredients, steps, images) are
-// flattened into a single cell separated by " | " so the sheet stays readable.
-// For a row-per-ingredient shape, use /api/export/recipes.csv.
+// Long-format recipe book: one row per ingredient line, repeating the cocktail
+// name/slug on each row. This is the shape spreadsheets and BI tools want —
+// cocktails.csv is the one-row-per-cocktail summary.
 
 type CocktailRow = {
   id: string
@@ -18,24 +18,9 @@ type CocktailRow = {
   spirit_base: string | null
   glass_type: string | null
   garnish: string | null
-  tasting_notes: string | null
-  flavor_profile: string[] | null
-  season: string[] | null
-  occasions: string[] | null
-  venue: string | null
-  event_origin: string | null
-  featured: boolean | null
-  pinned: boolean | null
   image_url: string | null
-  images: string[] | null
   method_steps: unknown
-  currency: string | null
-  menu_price_cents: number | null
-  cost_cents: number | null
-  created_at: string | null
-  updated_at: string | null
   creators: { name: string } | null
-  global_products: { brand: string; expression: string } | null
 }
 
 type IngredientRow = {
@@ -44,26 +29,33 @@ type IngredientRow = {
   amount: number | null
   unit: string | null
   amount_text: string | null
+  notes: string | null
   custom_name: string | null
-  global_ingredients: { name: string } | null
-  workspace_ingredients: { name: string } | null
+  global_ingredient_id: string | null
+  workspace_ingredient_id: string | null
+  global_product_id: string | null
+  global_ingredients: { name: string; category: string | null } | null
+  workspace_ingredients: { name: string; category: string | null } | null
   global_products: { brand: string; expression: string } | null
 }
 
-const SEP = ' | '
-
-function ingredientLine(i: IngredientRow): string {
-  const name =
-    i.custom_name ??
-    i.workspace_ingredients?.name ??
-    i.global_ingredients?.name ??
-    (i.global_products ? `${i.global_products.brand} ${i.global_products.expression}`.trim() : '')
-  const qty = i.amount_text ?? [i.amount ?? '', i.unit ?? ''].filter(String).join(' ').trim()
-  return [qty, name].filter(Boolean).join(' ').trim()
+function nameOf(i: IngredientRow): string {
+  if (i.custom_name) return i.custom_name
+  if (i.workspace_ingredients?.name) return i.workspace_ingredients.name
+  if (i.global_ingredients?.name) return i.global_ingredients.name
+  if (i.global_products) return `${i.global_products.brand} ${i.global_products.expression}`.trim()
+  return ''
 }
 
-function stepLines(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return []
+function sourceOf(i: IngredientRow): string {
+  if (i.workspace_ingredient_id) return 'workspace_ingredient'
+  if (i.global_ingredient_id) return 'global_ingredient'
+  if (i.global_product_id) return 'product'
+  return 'custom'
+}
+
+function methodText(raw: unknown): string {
+  if (!Array.isArray(raw)) return ''
   return raw
     .map((s, idx) => {
       const text = typeof s === 'string' ? s : ((s ?? {}) as { text?: string }).text ?? ''
@@ -71,15 +63,15 @@ function stepLines(raw: unknown): string[] {
       return text.trim() ? `${step}. ${text.trim()}` : ''
     })
     .filter(Boolean)
+    .join(' | ')
 }
 
 export async function GET() {
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
 
-  // Exports touch the full workspace — cap at 5 per user per hour.
   const rl = await rateLimit({
-    key: `export-cocktails:${user.id}`,
+    key: `export-recipes:${user.id}`,
     limit: 5,
     windowMs: 60 * 60 * 1000,
   })
@@ -114,7 +106,7 @@ export async function GET() {
       admin
         .from('cocktails')
         .select(
-          'id, slug, name, status, category, spirit_base, glass_type, garnish, tasting_notes, flavor_profile, season, occasions, venue, event_origin, featured, pinned, image_url, images, method_steps, currency, menu_price_cents, cost_cents, created_at, updated_at, creators(name), global_products(brand, expression)',
+          'id, slug, name, status, category, spirit_base, glass_type, garnish, image_url, method_steps, creators(name)',
         )
         .eq('workspace_id', ws.id)
         .neq('status', 'archived')
@@ -122,10 +114,9 @@ export async function GET() {
       admin
         .from('cocktail_ingredients')
         .select(
-          'cocktail_id, position, amount, unit, amount_text, custom_name, global_ingredients(name), workspace_ingredients(name), global_products(brand, expression), cocktails!inner(workspace_id)',
+          'cocktail_id, position, amount, unit, amount_text, notes, custom_name, global_ingredient_id, workspace_ingredient_id, global_product_id, global_ingredients(name, category), workspace_ingredients(name, category), global_products(brand, expression), cocktails!inner(workspace_id)',
         )
-        .eq('cocktails.workspace_id', ws.id)
-        .order('position'),
+        .eq('cocktails.workspace_id', ws.id),
     ])
 
   if (cocktailError) {
@@ -145,77 +136,78 @@ export async function GET() {
     list.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
   }
 
-  const money = (cents: number | null) => (cents == null ? '' : (cents / 100).toFixed(2))
-
-  const rows = cocktails.map((c) => {
-    const lines = (byCocktail.get(c.id) ?? []).map(ingredientLine).filter(Boolean)
-    const gallery = (c.images ?? []).filter(Boolean)
-    return {
-      slug: c.slug,
-      name: c.name,
+  const rows: Record<string, unknown>[] = []
+  for (const c of cocktails) {
+    const lines = byCocktail.get(c.id) ?? []
+    const base = {
+      cocktail_slug: c.slug,
+      cocktail_name: c.name,
       status: c.status,
       category: c.category ?? '',
       spirit: c.spirit_base ?? '',
-      base_product: c.global_products
-        ? `${c.global_products.brand} ${c.global_products.expression}`.trim()
-        : '',
       glass: c.glass_type ?? '',
       garnish: c.garnish ?? '',
       creator: c.creators?.name ?? '',
-      ingredients: lines.join(SEP),
-      ingredient_count: lines.length,
-      method: stepLines(c.method_steps).join(SEP),
-      tasting_notes: c.tasting_notes ?? '',
-      flavor_profile: (c.flavor_profile ?? []).join(SEP),
-      season: (c.season ?? []).join(SEP),
-      occasions: (c.occasions ?? []).join(SEP),
-      venue: c.venue ?? '',
-      event_origin: c.event_origin ?? '',
-      featured: c.featured ? 'yes' : 'no',
-      pinned: c.pinned ? 'yes' : 'no',
+      method: methodText(c.method_steps),
       image_url: c.image_url ?? '',
-      gallery_image_urls: gallery.join(SEP),
-      currency: c.currency ?? '',
-      menu_price: money(c.menu_price_cents),
-      cost: money(c.cost_cents),
-      created_at: c.created_at ?? '',
-      updated_at: c.updated_at ?? '',
     }
-  })
+    // A cocktail with no ingredients still gets a row — otherwise it would
+    // vanish from the export entirely.
+    if (lines.length === 0) {
+      rows.push({
+        ...base,
+        ingredient_position: '',
+        ingredient: '',
+        amount: '',
+        unit: '',
+        quantity: '',
+        ingredient_category: '',
+        ingredient_source: '',
+        ingredient_notes: '',
+      })
+      continue
+    }
+    for (const i of lines) {
+      rows.push({
+        ...base,
+        ingredient_position: i.position ?? '',
+        ingredient: nameOf(i),
+        amount: i.amount ?? '',
+        unit: i.unit ?? '',
+        quantity:
+          i.amount_text ?? [i.amount ?? '', i.unit ?? ''].filter(String).join(' ').trim(),
+        ingredient_category:
+          i.workspace_ingredients?.category ?? i.global_ingredients?.category ?? '',
+        ingredient_source: sourceOf(i),
+        ingredient_notes: i.notes ?? '',
+      })
+    }
+  }
 
   const csv = toCsv(rows, [
-    'slug',
-    'name',
+    'cocktail_slug',
+    'cocktail_name',
     'status',
     'category',
     'spirit',
-    'base_product',
     'glass',
     'garnish',
     'creator',
-    'ingredients',
-    'ingredient_count',
+    'ingredient_position',
+    'ingredient',
+    'quantity',
+    'amount',
+    'unit',
+    'ingredient_category',
+    'ingredient_source',
+    'ingredient_notes',
     'method',
-    'tasting_notes',
-    'flavor_profile',
-    'season',
-    'occasions',
-    'venue',
-    'event_origin',
-    'featured',
-    'pinned',
     'image_url',
-    'gallery_image_urls',
-    'currency',
-    'menu_price',
-    'cost',
-    'created_at',
-    'updated_at',
   ])
   return new NextResponse(csv, {
     headers: {
       'content-type': 'text/csv; charset=utf-8',
-      'content-disposition': `attachment; filename="${ws.slug}-cocktails.csv"`,
+      'content-disposition': `attachment; filename="${ws.slug}-recipes.csv"`,
     },
   })
 }

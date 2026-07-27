@@ -26,10 +26,11 @@ export default async function ExportSettingsPage() {
             Full workspace export
           </div>
           <p style={{ fontSize: 13.5, color: 'var(--ink-2)', margin: '0 0 16px', lineHeight: 1.55 }}>
-            All cocktails with ingredients, method steps, metadata, and creator links, plus the
-            full creator roster, your product catalog, and custom ingredients.
+            Every cocktail with its named ingredients, quantities, method steps, image URLs,
+            pricing and creator — plus the full creator roster, your product catalog, custom
+            ingredients and collections.
           </p>
-          <div className="row gap-sm">
+          <div className="row gap-sm" style={{ flexWrap: 'wrap' }}>
             <a
               href="/api/export/workspace.json"
               download={`${workspace.slug}-export.json`}
@@ -47,6 +48,14 @@ export default async function ExportSettingsPage() {
               Cocktails (CSV)
             </a>
             <a
+              href="/api/export/recipes.csv"
+              download={`${workspace.slug}-recipes.csv`}
+              className="btn-secondary"
+            >
+              <Icon name="download" size={13} />
+              Recipes (CSV)
+            </a>
+            <a
               href="/api/export/creators.csv"
               download={`${workspace.slug}-creators.csv`}
               className="btn-secondary"
@@ -55,6 +64,10 @@ export default async function ExportSettingsPage() {
               Creators (CSV)
             </a>
           </div>
+          <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: '12px 0 0', lineHeight: 1.5 }}>
+            JSON nests everything under each cocktail. Cocktails (CSV) is one row per cocktail;
+            Recipes (CSV) is one row per ingredient line.
+          </p>
         </div>
 
         <div className="card card-pad" style={{ padding: 22 }}>
